@@ -1,3 +1,6 @@
 [submodule "libraries/standard/coreMQTT"]
 	path = libraries/standard/coreMQTT
 	url = https://github.com/FreeRTOS/coreMQTT
+[submodule "libraries/standard/backoffAlgorithm"]
+	path = libraries/standard/backoffAlgorithm
+	url = https://github.com/FreeRTOS/backoffAlgorithm

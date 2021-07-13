@@ -14,7 +14,7 @@ target_sources(app PRIVATE ${app_sources})
 
 #for getting filepaths relative to the demo, but it's better to do it relative to the zephyr base
 #get_filename_component(DIR_ONE_ABOVE ../ ABSOLUTE)
-get_filename_component(CSDK_BASE "${ZEPHYR_BASE}/../aws-iot-device-sdk-embedded-C" ABSOLUTE)
+get_filename_component(CSDK_BASE "${ZEPHYR_BASE}/../../repos/zephyr-c-sdk" ABSOLUTE)
 message(STATUS "CSDK BASE IS: ${CSDK_BASE}")
 
 # Include MQTT library's source and header path variables.
