@@ -6,9 +6,9 @@
 # are not added to the variables.
 
 # Backoff Algorithm library source files.
-set( UTILITIES_SOURCES
-     "${CMAKE_CURRENT_LIST_DIR}/source/mbedtls_error.c" )
+set( CLOCK_SOURCES
+     "${CMAKE_CURRENT_LIST_DIR}/source/clock.c" )
 
 # Backoff Algorithm library Public Include directories.
-set( UTILITIES_INCLUDE_DIRS
-     "${CMAKE_CURRENT_LIST_DIR}/source/include" )
+set( CLOCK_INCLUDE_DIRS
+     "${CMAKE_CURRENT_LIST_DIR}/include" )

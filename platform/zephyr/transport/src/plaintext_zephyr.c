@@ -167,18 +167,18 @@ int32_t Plaintext_Recv( NetworkContext_t * pNetworkContext,
 
     /* Check if there is data to read from the socket. */
     selectStatus = zsock_select( pPlaintextParams->socketDescriptor + 1,
-                           &readfds,
-                           NULL,
-                           NULL,
-                           &recvTimeout );
+                                 &readfds,
+                                 NULL,
+                                 NULL,
+                                 &recvTimeout );
 
     if( selectStatus > 0 )
     {
         /* The socket is available for receiving data. */
         bytesReceived = ( int32_t ) zsock_recv( pPlaintextParams->socketDescriptor,
-                                          pBuffer,
-                                          bytesToRecv,
-                                          0 );
+                                                pBuffer,
+                                                bytesToRecv,
+                                                0 );
     }
     else if( selectStatus < 0 )
     {
@@ -264,18 +264,18 @@ int32_t Plaintext_Send( NetworkContext_t * pNetworkContext,
 
     /* Check if data can be written to the socket. */
     selectStatus = zsock_select( pPlaintextParams->socketDescriptor + 1,
-                           NULL,
-                           &writefds,
-                           NULL,
-                           &sendTimeout );
+                                 NULL,
+                                 &writefds,
+                                 NULL,
+                                 &sendTimeout );
 
     if( selectStatus > 0 )
     {
         /* The socket is available for sending data. */
         bytesSent = ( int32_t ) zsock_send( pPlaintextParams->socketDescriptor,
-                                      pBuffer,
-                                      bytesToSend,
-                                      0 );
+                                            pBuffer,
+                                            bytesToSend,
+                                            0 );
     }
     else if( selectStatus < 0 )
     {

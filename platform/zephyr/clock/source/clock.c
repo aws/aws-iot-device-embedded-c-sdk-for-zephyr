@@ -21,16 +21,11 @@
  */
 
 /**
- * @file clock_posix.c
- * @brief Implementation of the functions in clock.h for POSIX systems.
+ * @file clock.c
+ * @brief Implementation of the functions in clock.h.
  */
 
-/* POSIX include. Allow the default POSIX header to be overridden. */
-#ifdef POSIX_TIME_HEADER
-    #include POSIX_TIME_HEADER
-#else
-    #include <posix/time.h>
-#endif
+#include <posix/time.h>
 
 /* Platform clock include. */
 #include "clock.h"

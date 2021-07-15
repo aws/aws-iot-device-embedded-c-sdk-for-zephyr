@@ -147,6 +147,7 @@ static SocketStatus_t connectToAddress( struct sockaddr * pAddrInfo,
 
     /* Convert port from host byte order to network byte order. */
     netPort = htons( port );
+
     if( pAddrInfo->sa_family == ( sa_family_t ) AF_INET )
     {
         /* MISRA Rule 11.3 flags the following line for casting a pointer of
@@ -160,9 +161,9 @@ static SocketStatus_t connectToAddress( struct sockaddr * pAddrInfo,
         pIpv4Address->sin_port = netPort;
         addrInfoLength = ( socklen_t ) sizeof( struct sockaddr_in );
         ( void ) zsock_inet_ntop( ( int32_t ) pAddrInfo->sa_family,
-                            &pIpv4Address->sin_addr,
-                            resolvedIpAddr,
-                            ( socklen_t ) sizeof( resolvedIpAddr ) );
+                                  &pIpv4Address->sin_addr,
+                                  resolvedIpAddr,
+                                  ( socklen_t ) sizeof( resolvedIpAddr ) );
     }
     else
     {
@@ -177,12 +178,12 @@ static SocketStatus_t connectToAddress( struct sockaddr * pAddrInfo,
         pIpv6Address->sin6_port = netPort;
         addrInfoLength = ( socklen_t ) sizeof( struct sockaddr_in6 );
         ( void ) zsock_inet_ntop( ( int32_t ) pAddrInfo->sa_family,
-                            &pIpv6Address->sin6_addr,
-                            resolvedIpAddr,
-                            ( socklen_t ) sizeof( resolvedIpAddr ) );
+                                  &pIpv6Address->sin6_addr,
+                                  resolvedIpAddr,
+                                  ( socklen_t ) sizeof( resolvedIpAddr ) );
     }
 
-    LogDebug( ("Attempting to connect to server using the resolved IP address:"
+    LogDebug( ( "Attempting to connect to server using the resolved IP address:"
                 " IP address=%s.",
                 resolvedIpAddr ) );
 
@@ -227,8 +228,9 @@ static SocketStatus_t attemptConnection( struct zsock_addrinfo * pListHead,
     for( pIndex = pListHead; pIndex != NULL; pIndex = pIndex->ai_next )
     {
         *pTcpSocket = zsock_socket( pIndex->ai_family,
-                              pIndex->ai_socktype,
-                              pIndex->ai_protocol );
+                                    pIndex->ai_socktype,
+                                    pIndex->ai_protocol );
+
         if( *pTcpSocket == -1 )
         {
             continue;

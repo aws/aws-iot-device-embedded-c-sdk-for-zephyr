@@ -66,6 +66,7 @@
 #include <mbedtls/ssl.h>
 #include <mbedtls/threading.h>
 #include <mbedtls/x509.h>
+#include <mbedtls/error.h>
 
 /**
  * @brief Secured connection context.
@@ -149,10 +150,10 @@ typedef enum TlsTransportStatus
  * #TLS_TRANSPORT_HANDSHAKE_FAILED, #TLS_TRANSPORT_INTERNAL_ERROR, or #TLS_TRANSPORT_CONNECT_FAILURE.
  */
 TlsTransportStatus_t MBedTLS_Connect( NetworkContext_t * pNetworkContext,
-                                           const ServerInfo_t * pServerInfo,
-                                           const NetworkCredentials_t * pNetworkCredentials,
-                                           uint32_t receiveTimeoutMs,
-                                           uint32_t sendTimeoutMs );
+                                      const ServerInfo_t * pServerInfo,
+                                      const NetworkCredentials_t * pNetworkCredentials,
+                                      uint32_t receiveTimeoutMs,
+                                      uint32_t sendTimeoutMs );
 
 /**
  * @brief Gracefully disconnect an established TLS connection.
@@ -176,8 +177,8 @@ void MBedTLS_Disconnect( NetworkContext_t * pNetworkContext );
  * negative value on error.
  */
 int32_t MBedTLS_recv( NetworkContext_t * pNetworkContext,
-                           void * pBuffer,
-                           size_t bytesToRecv );
+                      void * pBuffer,
+                      size_t bytesToRecv );
 
 /**
  * @brief Sends data over an established TLS connection.
@@ -194,7 +195,7 @@ int32_t MBedTLS_recv( NetworkContext_t * pNetworkContext,
  * else a negative value to represent error.
  */
 int32_t MBedTLS_send( NetworkContext_t * pNetworkContext,
-                           const void * pBuffer,
-                           size_t bytesToSend );
+                      const void * pBuffer,
+                      size_t bytesToSend );
 
 #endif /* ifndef MBEDTLS_ZEPHYR_H */
