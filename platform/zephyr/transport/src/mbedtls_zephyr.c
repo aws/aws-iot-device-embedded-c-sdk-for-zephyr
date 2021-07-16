@@ -39,8 +39,8 @@
 
 /*-----------------------------------------------------------*/
 
-/** 
- * @brief Each compilation unit that consumes the NetworkContext must define it. 
+/**
+ * @brief Each compilation unit that consumes the NetworkContext must define it.
  * It should contain a single pointer as seen below whenever the header file
  * of this transport implementation is included to your project.
  *
@@ -70,7 +70,7 @@ static const char * pNoLowLevelMbedTlsCodeStr = "<No-Low-Level-Code>";
  * @brief Utility for converting the high-level code in an mbedTLS error to string,
  * if the code-contains a high-level code; otherwise, using a default string.
  */
-#define mbedtlsHighLevelCodeOrDefault( mbedTlsCode )        \
+#define mbedtlsHighLevelCodeOrDefault( mbedTlsCode )       \
     ( mbedtls_high_level_strerr( mbedTlsCode ) != NULL ) ? \
     mbedtls_high_level_strerr( mbedTlsCode ) : pNoHighLevelMbedTlsCodeStr
 
@@ -78,7 +78,7 @@ static const char * pNoLowLevelMbedTlsCodeStr = "<No-Low-Level-Code>";
  * @brief Utility for converting the level-level code in an mbedTLS error to string,
  * if the code-contains a level-level code; otherwise, using a default string.
  */
-#define mbedtlsLowLevelCodeOrDefault( mbedTlsCode )        \
+#define mbedtlsLowLevelCodeOrDefault( mbedTlsCode )       \
     ( mbedtls_low_level_strerr( mbedTlsCode ) != NULL ) ? \
     mbedtls_low_level_strerr( mbedTlsCode ) : pNoLowLevelMbedTlsCodeStr
 
@@ -208,23 +208,24 @@ static TlsTransportStatus_t initMbedtls( mbedtls_entropy_context * pEntropyConte
 /*-----------------------------------------------------------*/
 
 int mbedtls_platform_send( void * ctx,
-                  const unsigned char * buf,
-                  size_t len)
+                           const unsigned char * buf,
+                           size_t len )
 {
-    int socket = (int) ctx;
-    ssize_t sendStatus = zsock_send(socket, buf, len, 0);
+    int socket = ( int ) ctx;
+    ssize_t sendStatus = zsock_send( socket, buf, len, 0 );
 
     return sendStatus;
 }
 /*-----------------------------------------------------------*/
 int mbedtls_platform_recv( void * ctx,
-                  unsigned char * buf,
-                  size_t len )
+                           unsigned char * buf,
+                           size_t len )
 {
-    int socket = (int) ctx;
+    int socket = ( int ) ctx;
 
     int32_t selectStatus = -1;
     struct timeval recvTimeout;
+
     recvTimeout.tv_sec = ( ( ( int64_t ) 500 ) / 1000 );
     recvTimeout.tv_usec = ( 1000 * ( ( ( int64_t ) 500 ) % 1000 ) );
     fd_set readfds;
@@ -232,14 +233,16 @@ int mbedtls_platform_recv( void * ctx,
     ZSOCK_FD_SET( socket, &readfds );
 
     selectStatus = zsock_select( socket + 1,
-                           &readfds,
-                           NULL,
-                           NULL,
-                           &recvTimeout );
+                                 &readfds,
+                                 NULL,
+                                 NULL,
+                                 &recvTimeout );
 
     ssize_t recvStatus = 0;
-    if(selectStatus > 0) {
-        recvStatus = zsock_recv(socket, buf, len, 0);
+
+    if( selectStatus > 0 )
+    {
+        recvStatus = zsock_recv( socket, buf, len, 0 );
     }
 
     return recvStatus;
@@ -273,7 +276,7 @@ int mbedtls_platform_entropy_poll( void * data,
 
     /* TLS requires a secure random number generator; use the RNG provided
      * by Windows. This function MUST be re-implemented for other platforms. */
-    rngStatus = sys_csrand_get(output, len);
+    rngStatus = sys_csrand_get( output, len );
 
     if( rngStatus == 0 )
     {
@@ -315,7 +318,7 @@ static void sslContextFree( SSLContext_t * pSslContext )
     mbedtls_ctr_drbg_free( &( pSslContext->ctrDrgbContext ) );
     mbedtls_ssl_config_free( &( pSslContext->config ) );
 
-    free(pSslContext);
+    free( pSslContext );
 }
 /*-----------------------------------------------------------*/
 
@@ -558,7 +561,7 @@ static TlsTransportStatus_t tlsSetup( NetworkContext_t * pNetworkContext,
         }
         else
         {
-            // Optionally set SNI and ALPN protocols.
+            /* Optionally set SNI and ALPN protocols. */
             setOptionalConfigurations( pTlsTransportParams->sslContext,
                                        pHostName,
                                        pNetworkCredentials );
@@ -611,7 +614,7 @@ static TlsTransportStatus_t tlsHandshake( NetworkContext_t * pNetworkContext,
 
     if( returnStatus == TLS_TRANSPORT_SUCCESS )
     {
-        // Perform the TLS handshake.
+        /* Perform the TLS handshake. */
         do
         {
             mbedtlsError = mbedtls_ssl_handshake( &( pTlsTransportParams->sslContext->context ) );
@@ -633,7 +636,7 @@ static TlsTransportStatus_t tlsHandshake( NetworkContext_t * pNetworkContext,
         }
     }
 
-    printk("RETURNING FROM HANDSHAKE!");
+    printk( "RETURNING FROM HANDSHAKE!" );
     return returnStatus;
 }
 /*-----------------------------------------------------------*/
@@ -645,10 +648,11 @@ static TlsTransportStatus_t initMbedtls( mbedtls_entropy_context * pEntropyConte
     int32_t mbedtlsError = 0;
 
     /* Set the mutex functions for mbed TLS thread safety. */
+
     /*mbedtls_threading_set_alt( mbedtls_platform_mutex_init,
-                               mbedtls_platform_mutex_free,
-                               mbedtls_platform_mutex_lock,
-                               mbedtls_platform_mutex_unlock );*/
+     *                         mbedtls_platform_mutex_free,
+     *                         mbedtls_platform_mutex_lock,
+     *                         mbedtls_platform_mutex_unlock );*/
 
     /* Initialize contexts for random number generation. */
     mbedtls_entropy_init( pEntropyContext );
@@ -697,10 +701,10 @@ static TlsTransportStatus_t initMbedtls( mbedtls_entropy_context * pEntropyConte
 /*-----------------------------------------------------------*/
 
 TlsTransportStatus_t MBedTLS_Connect( NetworkContext_t * pNetworkContext,
-                                           const ServerInfo_t * pServerInfo,
-                                           const NetworkCredentials_t * pNetworkCredentials,
-                                           uint32_t receiveTimeoutMs,
-                                           uint32_t sendTimeoutMs )
+                                      const ServerInfo_t * pServerInfo,
+                                      const NetworkCredentials_t * pNetworkCredentials,
+                                      uint32_t receiveTimeoutMs,
+                                      uint32_t sendTimeoutMs )
 {
     TlsTransportParams_t * pTlsTransportParams = NULL;
     TlsTransportStatus_t returnStatus = TLS_TRANSPORT_SUCCESS;
@@ -734,12 +738,12 @@ TlsTransportStatus_t MBedTLS_Connect( NetworkContext_t * pNetworkContext,
     if( returnStatus == TLS_TRANSPORT_SUCCESS )
     {
         pTlsTransportParams = pNetworkContext->pParams;
-        pTlsTransportParams->sslContext = calloc(1, sizeof(*(pTlsTransportParams->sslContext)));
-        socketStatus = Sockets_Connect( &(pTlsTransportParams->tcpSocket),
+        pTlsTransportParams->sslContext = calloc( 1, sizeof( *( pTlsTransportParams->sslContext ) ) );
+        socketStatus = Sockets_Connect( &( pTlsTransportParams->tcpSocket ),
                                         pServerInfo,
                                         receiveTimeoutMs,
                                         sendTimeoutMs );
-        
+
         if( socketStatus != 0 )
         {
             LogError( ( "Failed to connect to %s with error %d.",
@@ -756,19 +760,19 @@ TlsTransportStatus_t MBedTLS_Connect( NetworkContext_t * pNetworkContext,
                                     &( pTlsTransportParams->sslContext->ctrDrgbContext ) );
     }
 
-    // Initialize TLS contexts and set credentials.
+    /* Initialize TLS contexts and set credentials. */
     if( returnStatus == TLS_TRANSPORT_SUCCESS )
     {
         returnStatus = tlsSetup( pNetworkContext, pHostName, pNetworkCredentials );
     }
 
-    // Perform TLS handshake.
+    /* Perform TLS handshake. */
     if( returnStatus == TLS_TRANSPORT_SUCCESS )
     {
         returnStatus = tlsHandshake( pNetworkContext, pNetworkCredentials );
     }
 
-    // Clean up on failure.
+    /* Clean up on failure. */
     if( returnStatus != TLS_TRANSPORT_SUCCESS )
     {
         if( ( pNetworkContext != NULL ) && ( pNetworkContext->pParams != NULL ) )
@@ -832,13 +836,13 @@ void MBedTLS_Disconnect( NetworkContext_t * pNetworkContext )
     }
 
     /* Clear the mutex functions for mbed TLS thread safety. */
-    //mbedtls_threading_free_alt();
+    /*mbedtls_threading_free_alt(); */
 }
 /*-----------------------------------------------------------*/
 
 int32_t MBedTLS_recv( NetworkContext_t * pNetworkContext,
-                           void * pBuffer,
-                           size_t bytesToRecv )
+                      void * pBuffer,
+                      size_t bytesToRecv )
 {
     TlsTransportParams_t * pTlsTransportParams = NULL;
     int32_t tlsStatus = 0;
@@ -879,8 +883,8 @@ int32_t MBedTLS_recv( NetworkContext_t * pNetworkContext,
 /*-----------------------------------------------------------*/
 
 int32_t MBedTLS_send( NetworkContext_t * pNetworkContext,
-                           const void * pBuffer,
-                           size_t bytesToSend )
+                      const void * pBuffer,
+                      size_t bytesToSend )
 {
     TlsTransportParams_t * pTlsTransportParams = NULL;
     int32_t tlsStatus = 0;
