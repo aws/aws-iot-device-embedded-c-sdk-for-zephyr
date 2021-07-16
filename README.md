@@ -14,7 +14,7 @@ To setup Zephyr, please follow Zephyr's documentation: https://docs.zephyrprojec
 
 These steps should setup a Zephyr workspace with a root directory named "zephyrproject"
 
-## ESP32
+### ESP32
 
 To setup development for the ESP32 board, please follow Zephyr's documentation for the board: https://docs.zephyrproject.org/latest/boards/xtensa/esp32/doc/index.html
 
