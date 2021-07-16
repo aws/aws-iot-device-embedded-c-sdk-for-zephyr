@@ -64,7 +64,7 @@
 /* Zephyr random */
 #include <random/rand32.h>
 
-#include <net/socket.h> //for debugging dns resolve/getaddrinfo
+#include <net/socket.h> /*for debugging dns resolve/getaddrinfo */
 
 /* Include Demo Config as the first non-system header. */
 #include "demo_config.h"
@@ -295,12 +295,11 @@
 #endif
 
 /*-----------------------------------------------------------*/
-//Wifi Connection Variables
-LOG_MODULE_REGISTER(esp32_wifi_sta, LOG_LEVEL_DBG);
+/*Wifi Connection Variables */
+LOG_MODULE_REGISTER( esp32_wifi_sta, LOG_LEVEL_DBG );
 
 static struct net_mgmt_event_callback dhcp_cb;
 
-//bool fakemutex = true;
 struct k_sem wifi_sem;
 
 /*-----------------------------------------------------------*/
@@ -596,15 +595,15 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
     /* Initialize credentials for establishing TLS session. */
     memset( &networkCredentials, 0, sizeof( NetworkCredentials_t ) );
     networkCredentials.pRootCa = ROOT_CA_CERT_PEM;
-    networkCredentials.rootCaSize = sizeof(ROOT_CA_CERT_PEM);
+    networkCredentials.rootCaSize = sizeof( ROOT_CA_CERT_PEM );
 
     /* If #CLIENT_USERNAME is defined, username/password is used for authenticating
      * the client. */
     #ifndef CLIENT_USERNAME
         networkCredentials.pClientCert = CLIENT_CERT_PEM;
-        networkCredentials.clientCertSize = sizeof(CLIENT_CERT_PEM);
+        networkCredentials.clientCertSize = sizeof( CLIENT_CERT_PEM );
         networkCredentials.pPrivateKey = CLIENT_PRIVATE_KEY_PEM;
-        networkCredentials.privateKeySize = sizeof(CLIENT_PRIVATE_KEY_PEM);
+        networkCredentials.privateKeySize = sizeof( CLIENT_PRIVATE_KEY_PEM );
     #endif
 
     /* AWS IoT requires devices to send the Server Name Indication (SNI)
@@ -612,8 +611,8 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
      * the complete endpoint address in the host_name field. Details about
      * SNI for AWS IoT can be found in the link below.
      * https://docs.aws.amazon.com/iot/latest/developerguide/transport-security.html */
-    //networkCredentials.sniHostName = AWS_IOT_ENDPOINT; old openssl line
-    networkCredentials.disableSni = 0; //0 for false
+    /*networkCredentials.sniHostName = AWS_IOT_ENDPOINT; old openssl line */
+    networkCredentials.disableSni = 0; /*0 for false */
 
     if( AWS_MQTT_PORT == 443 )
     {
@@ -629,10 +628,10 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
          */
         #ifdef CLIENT_USERNAME
             networkCredentials.pAlpnProtos = AWS_IOT_PASSWORD_ALPN;
-            //opensslCredentials.alpnProtosLen = AWS_IOT_PASSWORD_ALPN_LENGTH;
+            /*opensslCredentials.alpnProtosLen = AWS_IOT_PASSWORD_ALPN_LENGTH; */
         #else
             *networkCredentials.pAlpnProtos = AWS_IOT_MQTT_ALPN;
-            //opensslCredentials.alpnProtosLen = AWS_IOT_MQTT_ALPN_LENGTH;
+            /*opensslCredentials.alpnProtosLen = AWS_IOT_MQTT_ALPN_LENGTH; */
         #endif
     }
 
@@ -655,15 +654,16 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
                    AWS_IOT_ENDPOINT_LENGTH,
                    AWS_IOT_ENDPOINT,
                    AWS_MQTT_PORT ) );
+
         /*tlsTransportStatus = Sockets_Connect( &(pNetworkContext->pParams->tcpSocket),
-                                        &serverInfo,
-                                        TRANSPORT_SEND_RECV_TIMEOUT_MS,
-                                        TRANSPORT_SEND_RECV_TIMEOUT_MS );*/
+         *                              &serverInfo,
+         *                              TRANSPORT_SEND_RECV_TIMEOUT_MS,
+         *                              TRANSPORT_SEND_RECV_TIMEOUT_MS );*/
         tlsTransportStatus = MBedTLS_Connect( pNetworkContext,
-                                         &serverInfo,
-                                         &networkCredentials,
-                                         TRANSPORT_SEND_RECV_TIMEOUT_MS,
-                                         TRANSPORT_SEND_RECV_TIMEOUT_MS );
+                                              &serverInfo,
+                                              &networkCredentials,
+                                              TRANSPORT_SEND_RECV_TIMEOUT_MS,
+                                              TRANSPORT_SEND_RECV_TIMEOUT_MS );
 
         if( tlsTransportStatus == TLS_TRANSPORT_SUCCESS )
         {
@@ -1513,9 +1513,10 @@ int mutual_auth_start()
     MQTTContext_t mqttContext = { 0 };
     NetworkContext_t networkContext = { 0 };
     TlsTransportParams_t tlsTransportParams = { 0 };
-    //tlsTransportParams.sslContext = calloc(1, sizeof(tlsTransportParams.sslContext));
+    /*tlsTransportParams.sslContext = calloc(1, sizeof(tlsTransportParams.sslContext)); */
     bool clientSessionPresent = false, brokerSessionPresent = false;
-    //struct timespec tp;
+
+    /*struct timespec tp; */
 
     /* Set the pParams member of the network context with desired transport. */
     networkContext.pParams = &tlsTransportParams;
@@ -1524,9 +1525,9 @@ int mutual_auth_start()
      * use by retry utils library when retrying failed network operations. */
 
     /* Get current time to seed pseudo random number generator. */
-    //( void ) clock_gettime( CLOCK_REALTIME, &tp );
+    /*( void ) clock_gettime( CLOCK_REALTIME, &tp ); */
     /* Seed pseudo random number generator with nanoseconds. */
-    //srand( tp.tv_nsec );
+    /*srand( tp.tv_nsec ); */
 
     /* Initialize MQTT library. Initialization of the MQTT library needs to be
      * done only once in this demo. */
@@ -1602,74 +1603,82 @@ int mutual_auth_start()
 
 /*-----------------------------------------------------------*/
 
-static void handler_cb(struct net_mgmt_event_callback *cb,
-		    uint32_t mgmt_event, struct net_if *iface)
+static void handler_cb( struct net_mgmt_event_callback * cb,
+                        uint32_t mgmt_event,
+                        struct net_if * iface )
 {
-	if (mgmt_event != NET_EVENT_IPV4_DHCP_BOUND) {
-		return;
-	}
+    if( mgmt_event != NET_EVENT_IPV4_DHCP_BOUND )
+    {
+        return;
+    }
 
-	char buf[NET_IPV4_ADDR_LEN];
-    
-	printf("Your address: %s",
-		log_strdup(net_addr_ntop(AF_INET,
-				   &iface->config.dhcpv4.requested_ip,
-				   buf, sizeof(buf))));
-	printf("Lease time: %u seconds",
-			iface->config.dhcpv4.lease_time);
-	printf("Subnet: %s",
-		log_strdup(net_addr_ntop(AF_INET,
-					&iface->config.ip.ipv4->netmask,
-					buf, sizeof(buf))));
-	printf("Router: %s\n",
-		log_strdup(net_addr_ntop(AF_INET,
-						&iface->config.ip.ipv4->gw,
-						buf, sizeof(buf))));
-    
-    //fakemutex = false;
-    k_sem_give(&wifi_sem);
+    char buf[ NET_IPV4_ADDR_LEN ];
+
+    printf( "Your address: %s",
+            log_strdup( net_addr_ntop( AF_INET,
+                                       &iface->config.dhcpv4.requested_ip,
+                                       buf, sizeof( buf ) ) ) );
+    printf( "Lease time: %u seconds",
+            iface->config.dhcpv4.lease_time );
+    printf( "Subnet: %s",
+            log_strdup( net_addr_ntop( AF_INET,
+                                       &iface->config.ip.ipv4->netmask,
+                                       buf, sizeof( buf ) ) ) );
+    printf( "Router: %s\n",
+            log_strdup( net_addr_ntop( AF_INET,
+                                       &iface->config.ip.ipv4->gw,
+                                       buf, sizeof( buf ) ) ) );
+
+    k_sem_give( &wifi_sem );
 }
 
 void main()
 {
-    //WIFI CONNECTION
-    struct net_if *iface;
+    /*WIFI CONNECTION */
+    struct net_if * iface;
 
-    k_sem_init(&wifi_sem, 0, 1);
-    
-	net_mgmt_init_event_callback(&dhcp_cb, handler_cb,
-				     NET_EVENT_IPV4_DHCP_BOUND);
+    k_sem_init( &wifi_sem, 0, 1 );
 
-	net_mgmt_add_event_callback(&dhcp_cb);
+    net_mgmt_init_event_callback( &dhcp_cb, handler_cb,
+                                  NET_EVENT_IPV4_DHCP_BOUND );
 
-	iface = net_if_get_default();
-	if (!iface) {
-		LOG_ERR("wifi interface not available");
-		return;
-	}
+    net_mgmt_add_event_callback( &dhcp_cb );
 
-	net_dhcpv4_start(iface);
+    iface = net_if_get_default();
 
-	if (!IS_ENABLED(CONFIG_ESP32_WIFI_STA_AUTO)) {
-		wifi_config_t wifi_config = {
-			.sta = {
-				.ssid = CONFIG_ESP32_WIFI_SSID,
-				.password = CONFIG_ESP32_WIFI_PASSWORD,
-			},
-		};
+    if( !iface )
+    {
+        LOG_ERR( "wifi interface not available" );
+        return;
+    }
 
-		esp_err_t ret = esp_wifi_set_mode(WIFI_MODE_STA);
+    net_dhcpv4_start( iface );
 
-		ret |= esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config);
-		ret |= esp_wifi_connect();
-		if (ret != ESP_OK) {
-			LOG_ERR("connection failed");
-		}
-	}
+    if( !IS_ENABLED( CONFIG_ESP32_WIFI_STA_AUTO ) )
+    {
+        wifi_config_t wifi_config =
+        {
+            .sta          =
+            {
+                .ssid     = CONFIG_ESP32_WIFI_SSID,
+                .password = CONFIG_ESP32_WIFI_PASSWORD,
+            },
+        };
 
-    k_sem_take(&wifi_sem, K_FOREVER);
+        esp_err_t ret = esp_wifi_set_mode( WIFI_MODE_STA );
+
+        ret |= esp_wifi_set_config( ESP_IF_WIFI_STA, &wifi_config );
+        ret |= esp_wifi_connect();
+
+        if( ret != ESP_OK )
+        {
+            LOG_ERR( "connection failed" );
+        }
+    }
+
+    k_sem_take( &wifi_sem, K_FOREVER );
 
     mutual_auth_start();
 
-    k_sem_give(&wifi_sem);
-}   
+    k_sem_give( &wifi_sem );
+}

@@ -5,16 +5,11 @@ cmake_minimum_required(VERSION 3.13.1)
 find_package(Zephyr HINTS $ENV{ZEPHYR_BASE})
 project(mqtt_mutual_auth)
 
-message(STATUS "ZEPHYR BASE IS: ${ZEPHYR_BASE}")
-message(STATUS "CMAKE SOURCE DIR IS: ${CMAKE_SOURCE_DIR}")
-message(STATUS "CMAKE CURRENT LIST DIR IS: ${CMAKE_CURRENT_LIST_DIR}")
-
 FILE(GLOB app_sources src/*.c)
 target_sources(app PRIVATE ${app_sources})
 
 #for getting filepaths relative to the demo, but it's better to do it relative to the zephyr base
 get_filename_component(CSDK_BASE "${CMAKE_SOURCE_DIR}/../../.." ABSOLUTE)
-message(STATUS "CSDK BASE IS: ${CSDK_BASE}")
 
 # Include MQTT library's source and header path variables.
 include( ${CSDK_BASE}/libraries/standard/coreMQTT/mqttFilePaths.cmake )
