@@ -664,7 +664,6 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
                                          &networkCredentials,
                                          TRANSPORT_SEND_RECV_TIMEOUT_MS,
                                          TRANSPORT_SEND_RECV_TIMEOUT_MS );
-        printk("successful connect\n");
 
         if( tlsTransportStatus == TLS_TRANSPORT_SUCCESS )
         {
@@ -672,7 +671,6 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
              * in this MQTT client. */
             createCleanSession = ( *pClientSessionPresent == true ) ? false : true;
 
-            printk("establishing mqtt session\n");
             /* Sends an MQTT Connect packet using the established TLS session,
              * then waits for connection acknowledgment (CONNACK) packet. */
             returnStatus = establishMqttSession( pMqttContext, createCleanSession, pBrokerSessionPresent );
@@ -683,8 +681,6 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
                 ( void ) MBedTLS_Disconnect( pNetworkContext );
             }
         }
-
-        printk("mqtt session established?\n");
 
         if( returnStatus == EXIT_FAILURE )
         {
@@ -702,7 +698,6 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
                            "after %hu ms backoff.",
                            ( unsigned short ) nextRetryBackOff ) );
                 Clock_SleepMs( nextRetryBackOff );
-                printk("clock sleeping\n");
             }
         }
     } while( ( returnStatus == EXIT_FAILURE ) && ( backoffAlgStatus == BackoffAlgorithmSuccess ) );
@@ -1137,10 +1132,8 @@ static int establishMqttSession( MQTTContext_t * pMqttContext,
         connectInfo.passwordLength = 0U;
     #endif /* ifdef CLIENT_USERNAME */
 
-    printk("before sending packet to broker \n");
     /* Send MQTT CONNECT packet to broker. */
     mqttStatus = MQTT_Connect( pMqttContext, &connectInfo, NULL, CONNACK_RECV_TIMEOUT_MS, pSessionPresent );
-    printk("packet sent\n");
 
     if( mqttStatus != MQTTSuccess )
     {
