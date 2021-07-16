@@ -636,7 +636,6 @@ static TlsTransportStatus_t tlsHandshake( NetworkContext_t * pNetworkContext,
         }
     }
 
-    printk( "RETURNING FROM HANDSHAKE!" );
     return returnStatus;
 }
 /*-----------------------------------------------------------*/
