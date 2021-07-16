@@ -90,8 +90,8 @@ env:ZEPHYR_TOOLCHAIN_VARIANT="espressif"
 env:Path += "$env:ESPRESSIF_TOOLCHAIN_PATH\bin"
 ```
 
-2. Make sure this and following steps are done inside the Zephyr workspace. Run `<west update>` followed by `<west espressif update>` to retrieve required Zephyr submodules for ESP32.
+2. Make sure this and following steps are done inside the Zephyr workspace. Run `west update` followed by `west espressif update` to retrieve required Zephyr submodules for ESP32.
   
-3. Run `<west build -b esp32 file_path_to_demo>` to build a demo, replacing `<file_path_to_demo>` with the path to the desired demo.
+3. Run `west build -b esp32 file_path_to_demo` to build a demo, replacing `file_path_to_demo` with the path to the desired demo.
 
-4. Run `<west flash>` to flash the demo. For documentation on additional options when flashing, please refer to https://docs.zephyrproject.org/latest/boards/xtensa/esp32/doc/index.html#flashing
+4. Run `west flash` to flash the demo. For documentation on additional options when flashing, please refer to https://docs.zephyrproject.org/latest/boards/xtensa/esp32/doc/index.html#flashing
