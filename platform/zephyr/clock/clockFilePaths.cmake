@@ -5,10 +5,10 @@
 # Files specific to the repository such as test runner, platform tests
 # are not added to the variables.
 
-# Backoff Algorithm library source files.
+# Platform Clock library source files.
 set( CLOCK_SOURCES
      "${CMAKE_CURRENT_LIST_DIR}/source/clock.c" )
 
-# Backoff Algorithm library Public Include directories.
+# Platform Clock library Include directories.
 set( CLOCK_INCLUDE_DIRS
      "${CMAKE_CURRENT_LIST_DIR}/include" )
