@@ -95,3 +95,31 @@ env:Path += "$env:ESPRESSIF_TOOLCHAIN_PATH\bin"
 3. Run `west build -b esp32 file_path_to_demo` to build a demo, replacing `file_path_to_demo` with the path to the desired demo.
 
 4. Run `west flash` to flash the demo. For documentation on additional options when flashing, please refer to https://docs.zephyrproject.org/latest/boards/xtensa/esp32/doc/index.html#flashing
+
+## Adding C-SDK to a Zephyr Application
+
+To use C-SDK libraries in an existing Zephyr application, edit the CMakeLists.txt file of the application to target the library's sources and directories as defined in the `*.cmake` file in the library's root directory. For example, to add the coreMQTT library, add the following lines to CMakeLists.txt:
+
+```
+include( include( ${CSDK_BASE}/libraries/standard/coreMQTT/mqttFilePaths.cmake )
+
+...
+
+target_sources(
+  ...
+  ${MQTT_SOURCES}
+  ${MQTT_SERIALIZER_SOURCES}
+  ...
+)
+
+...
+
+target_include_directories(
+  ...
+  ${MQTT_INCLUDE_PUBLIC_DIRS}
+  ...
+)
+
+...
+```
+Where `${CSDK_BASE}` is the file path to the root of this repository.
