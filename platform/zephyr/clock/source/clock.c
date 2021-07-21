@@ -26,7 +26,7 @@
  */
 
 /* Zephyr kernel API. */
-#include <kernel.h>
+#include <zephyr.h>
 
 /* Platform clock include. */
 #include "clock.h"
