@@ -133,7 +133,9 @@ int32_t Plaintext_Recv( NetworkContext_t * pNetworkContext,
      * no data is available to be read from the socket. */
     if( bytesToRecv == 1U )
     {
-        /* Check if there is data to read (without blocking) from the socket. */
+        /* Check if there is data to read (without blocking) from the socket.
+         * Note: Unlike the POSIX version, a timeout value of 0 here causes an 
+         * MQTTNoDataAvailable error, possibly due to a platform limitation. */
         pollStatus = zsock_poll( &pollFds, 1, 1 );
     }
 
@@ -195,8 +197,10 @@ int32_t Plaintext_Send( NetworkContext_t * pNetworkContext,
     /* Check if data can be written to the socket.
      * Note: This is done to avoid blocking on send() when
      * the socket is not ready to accept more data for network
-     * transmission (possibly due to a full TX buffer). */
-    pollStatus = poll( &pollFds, 1, 1 );
+     * transmission (possibly due to a full TX buffer).
+     * Note: Unlike the POSIX version, a timeout value of 0 here causes an 
+     * MQTTNoDataAvailable error, possibly due to a platform limitation. */
+    pollStatus = zsock_poll( &pollFds, 1, 1 );
 
     if( pollStatus > 0 )
     {
