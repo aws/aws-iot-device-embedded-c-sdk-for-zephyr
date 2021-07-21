@@ -150,12 +150,6 @@ static SocketStatus_t connectToAddress( struct sockaddr * pAddrInfo,
 
     if( pAddrInfo->sa_family == ( sa_family_t ) AF_INET )
     {
-        /* MISRA Rule 11.3 flags the following line for casting a pointer of
-         * a object type to a pointer of a different object type. This rule
-         * is suppressed because casting from a struct sockaddr pointer to
-         * a struct sockaddr_in pointer is supported in POSIX and is used
-         * to obtain the IP address from the address record. */
-        /* coverity[misra_c_2012_rule_11_3_violation] */
         pIpv4Address = ( struct sockaddr_in * ) pAddrInfo;
         /* Store IPv4 in string to log. */
         pIpv4Address->sin_port = netPort;
@@ -167,12 +161,6 @@ static SocketStatus_t connectToAddress( struct sockaddr * pAddrInfo,
     }
     else
     {
-        /* MISRA Rule 11.3 flags the following line for casting a pointer of
-         * a object type to a pointer of a different object type. This rule
-         * is suppressed because casting from a struct sockaddr pointer to
-         * a struct sockaddr_in6 pointer is supported in POSIX and is used
-         * to obtain the IPv6 address from the address record. */
-        /* coverity[misra_c_2012_rule_11_3_violation] */
         pIpv6Address = ( struct sockaddr_in6 * ) pAddrInfo;
         /* Store IPv6 in string to log. */
         pIpv6Address->sin6_port = netPort;

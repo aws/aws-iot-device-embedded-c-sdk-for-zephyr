@@ -30,10 +30,10 @@
 
 #include "plaintext_zephyr.h"
 
+/* Milliseconds per second */
 #define ONE_SEC_TO_MS    ( 1000 )
-
+/* Nanoseconds per millisecond */
 #define ONE_MS_TO_US     ( 1000 )
-
 
 /*-----------------------------------------------------------*/
 
@@ -111,9 +111,6 @@ SocketStatus_t Plaintext_Disconnect( const NetworkContext_t * pNetworkContext )
 }
 /*-----------------------------------------------------------*/
 
-/* MISRA Rule 8.13 flags the following line for not using the const qualifier
- * on `pNetworkContext`. Indeed, the object pointed by it is not modified
- * by POSIX sockets, but other implementations of `TransportRecv_t` may do so. */
 int32_t Plaintext_Recv( NetworkContext_t * pNetworkContext,
                         void * pBuffer,
                         size_t bytesToRecv )
@@ -133,36 +130,8 @@ int32_t Plaintext_Recv( NetworkContext_t * pNetworkContext,
     recvTimeout.tv_sec = ( ( ( int64_t ) 500 ) / ONE_SEC_TO_MS );
     recvTimeout.tv_usec = ( ONE_MS_TO_US * ( ( ( int64_t ) 500 ) % ONE_SEC_TO_MS ) );
 
-    /* MISRA Directive 4.6 flags the following line for a violation of using a
-     * basic type "int" rather than a type that includes size and signedness information.
-     * We suppress the violation as the flagged type, "fd_set", is a POSIX
-     * system-specific type, and is used for the call to "select()". */
-
-    /* MISRA Rule 14.4 flags the following line for using condition expression "0"
-     * as a boolean type. We suppress the violation as the "FD_ZERO" is a POSIX
-     * specific macro utility whose implementation is supplied by the system.
-     * The "FD_ZERO" macro is called as specified by the POSIX manual here:
-     * https://pubs.opengroup.org/onlinepubs/009695399/basedefs/sys/select.h.html */
-    /* coverity[misra_c_2012_directive_4_6_violation] */
-    /* coverity[misra_c_2012_rule_14_4_violation] */
     ZSOCK_FD_ZERO( &readfds );
 
-    /* MISRA Directive 4.6 flags the following line for a violation of using a
-     * basic type "int" rather than a type that includes size and signedness information.
-     * We suppress the violation as the flagged type, "fd_set", is a POSIX
-     * system-specific type, and is used for the call to "select()". */
-    /* coverity[misra_c_2012_directive_4_6_violation] */
-
-    /* MISRA Rule 10.1, Rule 10.8 and Rule 13.4 flag the following line for
-     * implementation of the "FD_SET()" POSIX macro. We suppress these violations
-     * "FD_SET" is a POSIX specific macro utility whose implementation
-     * is supplied by the system.
-     * The "FD_SET" macro is used as specified by the POSIX manual here:
-     * https://pubs.opengroup.org/onlinepubs/009695399/basedefs/sys/select.h.html */
-    /* coverity[misra_c_2012_directive_4_6_violation] */
-    /* coverity[misra_c_2012_rule_10_1_violation] */
-    /* coverity[misra_c_2012_rule_13_4_violation] */
-    /* coverity[misra_c_2012_rule_10_8_violation] */
     ZSOCK_FD_SET( pPlaintextParams->socketDescriptor, &readfds );
 
     /* Check if there is data to read from the socket. */
@@ -200,18 +169,11 @@ int32_t Plaintext_Recv( NetworkContext_t * pNetworkContext,
     {
         logTransportError( errno );
     }
-    else
-    {
-        /* Empty else MISRA 15.7 */
-    }
 
     return bytesReceived;
 }
 /*-----------------------------------------------------------*/
 
-/* MISRA Rule 8.13 flags the following line for not using the const qualifier
- * on `pNetworkContext`. Indeed, the object pointed by it is not modified
- * by POSIX sockets, but other implementations of `TransportSend_t` may do so. */
 int32_t Plaintext_Send( NetworkContext_t * pNetworkContext,
                         const void * pBuffer,
                         size_t bytesToSend )
@@ -231,35 +193,8 @@ int32_t Plaintext_Send( NetworkContext_t * pNetworkContext,
     sendTimeout.tv_sec = ( ( ( int64_t ) 500 ) / ONE_SEC_TO_MS );
     sendTimeout.tv_usec = ( ONE_MS_TO_US * ( ( ( int64_t ) 500 ) % ONE_SEC_TO_MS ) );
 
-    /* MISRA Directive 4.6 flags the following line for a violation of using a
-     * basic type "int" rather than a type that includes size and signedness information.
-     * We suppress the violation as the flagged type, "fd_set", is a POSIX
-     * system-specific type, and is used for the call to "select()". */
-
-    /* MISRA Rule 14.4 flags the following line for using condition expression "0"
-     * as a boolean type. We suppress the violation as the "FD_ZERO" is a POSIX
-     * specific macro utility whose implementation is supplied by the system.
-     * The "FD_ZERO" macro is called as specified by the POSIX manual here:
-     * https://pubs.opengroup.org/onlinepubs/009695399/basedefs/sys/select.h.html */
-    /* coverity[misra_c_2012_directive_4_6_violation] */
-    /* coverity[misra_c_2012_rule_14_4_violation] */
     ZSOCK_FD_ZERO( &writefds );
 
-    /* MISRA Directive 4.6 flags the following line for a violation of using a
-     * basic type "int" rather than a type that includes size and signedness information.
-     * We suppress the violation as the flagged type, "fd_set", is a POSIX
-     * system-specific type, and is used for the call to "select()". */
-
-    /* MISRA Rule 10.1, Rule 10.8 and Rule 13.4 flag the following line for
-     * implementation of the "FD_SET()" POSIX macro. We suppress these violations
-     * as "FD_SET" is a POSIX specific macro utility whose implementation
-     * is supplied by the system.
-     * The "FD_ZERO" macro is used as specified by the POSIX manual here:
-     * https://pubs.opengroup.org/onlinepubs/009695399/basedefs/sys/select.h.html */
-    /* coverity[misra_c_2012_directive_4_6_violation] */
-    /* coverity[misra_c_2012_rule_10_1_violation] */
-    /* coverity[misra_c_2012_rule_13_4_violation] */
-    /* coverity[misra_c_2012_rule_10_8_violation] */
     ZSOCK_FD_SET( pPlaintextParams->socketDescriptor, &writefds );
 
     /* Check if data can be written to the socket. */
@@ -296,10 +231,6 @@ int32_t Plaintext_Send( NetworkContext_t * pNetworkContext,
     else if( bytesSent < 0 )
     {
         logTransportError( errno );
-    }
-    else
-    {
-        /* Empty else MISRA 15.7 */
     }
 
     return bytesSent;

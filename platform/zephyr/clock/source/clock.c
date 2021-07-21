@@ -25,6 +25,9 @@
  * @brief Implementation of the functions in clock.h.
  */
 
+/* Zephyr kernel API. */
+#include <kernel.h>
+
 /* Platform clock include. */
 #include "clock.h"
 
@@ -48,5 +51,5 @@ uint32_t Clock_GetTimeMs( void )
 
 void Clock_SleepMs( uint32_t sleepTimeMs )
 {
-    k_sleep(K_MSEC(sleepTimeMs));
+    k_sleep( K_MSEC( sleepTimeMs ) );
 }
