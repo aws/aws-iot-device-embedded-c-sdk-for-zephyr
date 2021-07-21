@@ -157,7 +157,7 @@ static SocketStatus_t connectToAddress( struct sockaddr * pAddrInfo,
         ( void ) zsock_inet_ntop( ( int32_t ) pAddrInfo->sa_family,
                                   &pIpv4Address->sin_addr,
                                   resolvedIpAddr,
-                                  ( socklen_t ) sizeof( resolvedIpAddr ) );
+                                  addrInfoLength );
     }
     else
     {
@@ -168,7 +168,7 @@ static SocketStatus_t connectToAddress( struct sockaddr * pAddrInfo,
         ( void ) zsock_inet_ntop( ( int32_t ) pAddrInfo->sa_family,
                                   &pIpv6Address->sin6_addr,
                                   resolvedIpAddr,
-                                  ( socklen_t ) sizeof( resolvedIpAddr ) );
+                                  addrInfoLength );
     }
 
     LogDebug( ( "Attempting to connect to server using the resolved IP address:"
