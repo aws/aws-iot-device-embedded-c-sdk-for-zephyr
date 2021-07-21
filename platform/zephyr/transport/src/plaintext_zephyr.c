@@ -30,11 +30,6 @@
 
 #include "plaintext_zephyr.h"
 
-/* Milliseconds per second */
-#define ONE_SEC_TO_MS    ( 1000 )
-/* Nanoseconds per millisecond */
-#define ONE_MS_TO_US     ( 1000 )
-
 /*-----------------------------------------------------------*/
 
 /* Each compilation unit must define the NetworkContext struct. */
@@ -116,9 +111,8 @@ int32_t Plaintext_Recv( NetworkContext_t * pNetworkContext,
                         size_t bytesToRecv )
 {
     PlaintextParams_t * pPlaintextParams = NULL;
-    int32_t bytesReceived = -1, selectStatus = -1;
-    struct timeval recvTimeout;
-    fd_set readfds;
+    int32_t bytesReceived = -1, pollStatus = 1;
+    struct zsock_pollfd pollFds;
 
     assert( pNetworkContext != NULL && pNetworkContext->pParams != NULL );
     assert( pBuffer != NULL );
@@ -126,22 +120,24 @@ int32_t Plaintext_Recv( NetworkContext_t * pNetworkContext,
 
     pPlaintextParams = pNetworkContext->pParams;
 
-    /* Set a receive timemout to use as the timeout for #select. */
-    recvTimeout.tv_sec = ( ( ( int64_t ) 500 ) / ONE_SEC_TO_MS );
-    recvTimeout.tv_usec = ( ONE_MS_TO_US * ( ( ( int64_t ) 500 ) % ONE_SEC_TO_MS ) );
+    /* Initialize the file descriptor.
+     * #ZSOCK_POLLPRI corresponds to high-priority data while #ZSOCK_POLLIN corresponds
+     * to any other data that may be read. */
+    pollFds.events = ZSOCK_POLLIN | ZSOCK_POLLPRI;
+    pollFds.revents = 0;
+    /* Set the file descriptor for poll. */
+    pollFds.fd = pPlaintextParams->socketDescriptor;
 
-    ZSOCK_FD_ZERO( &readfds );
+    /* Speculative read for the start of a payload.
+     * Note: This is done to avoid blocking when
+     * no data is available to be read from the socket. */
+    if( bytesToRecv == 1U )
+    {
+        /* Check if there is data to read (without blocking) from the socket. */
+        pollStatus = zsock_poll( &pollFds, 1, 1 );
+    }
 
-    ZSOCK_FD_SET( pPlaintextParams->socketDescriptor, &readfds );
-
-    /* Check if there is data to read from the socket. */
-    selectStatus = zsock_select( pPlaintextParams->socketDescriptor + 1,
-                                 &readfds,
-                                 NULL,
-                                 NULL,
-                                 &recvTimeout );
-
-    if( selectStatus > 0 )
+    if( pollStatus > 0 )
     {
         /* The socket is available for receiving data. */
         bytesReceived = ( int32_t ) zsock_recv( pPlaintextParams->socketDescriptor,
@@ -149,18 +145,20 @@ int32_t Plaintext_Recv( NetworkContext_t * pNetworkContext,
                                                 bytesToRecv,
                                                 0 );
     }
-    else if( selectStatus < 0 )
+    else if( pollStatus < 0 )
     {
         /* An error occurred while polling. */
         bytesReceived = -1;
     }
     else
     {
-        /* Timed out waiting for data to be received. */
+        /* No data available to receive. */
         bytesReceived = 0;
     }
 
-    if( ( selectStatus > 0 ) && ( bytesReceived == 0 ) )
+    /* Note: A zero value return from recv() represents
+     * closure of TCP connection by the peer. */
+    if( ( pollStatus > 0 ) && ( bytesReceived == 0 ) )
     {
         /* Peer has closed the connection. Treat as an error. */
         bytesReceived = -1;
@@ -179,9 +177,8 @@ int32_t Plaintext_Send( NetworkContext_t * pNetworkContext,
                         size_t bytesToSend )
 {
     PlaintextParams_t * pPlaintextParams = NULL;
-    int32_t bytesSent = -1, selectStatus = -1;
-    struct timeval sendTimeout;
-    fd_set writefds;
+    int32_t bytesSent = -1, pollStatus = -1;
+    struct zsock_pollfd pollFds;
 
     assert( pNetworkContext != NULL && pNetworkContext->pParams != NULL );
     assert( pBuffer != NULL );
@@ -189,22 +186,19 @@ int32_t Plaintext_Send( NetworkContext_t * pNetworkContext,
 
     pPlaintextParams = pNetworkContext->pParams;
 
-    /* Set a receive timemout to use as the timeout for #select. */
-    sendTimeout.tv_sec = ( ( ( int64_t ) 500 ) / ONE_SEC_TO_MS );
-    sendTimeout.tv_usec = ( ONE_MS_TO_US * ( ( ( int64_t ) 500 ) % ONE_SEC_TO_MS ) );
+    /* Initialize the file descriptor. */
+    pollFds.events = ZSOCK_POLLOUT;
+    pollFds.revents = 0;
+    /* Set the file descriptor for poll. */
+    pollFds.fd = pPlaintextParams->socketDescriptor;
 
-    ZSOCK_FD_ZERO( &writefds );
+    /* Check if data can be written to the socket.
+     * Note: This is done to avoid blocking on send() when
+     * the socket is not ready to accept more data for network
+     * transmission (possibly due to a full TX buffer). */
+    pollStatus = poll( &pollFds, 1, 1 );
 
-    ZSOCK_FD_SET( pPlaintextParams->socketDescriptor, &writefds );
-
-    /* Check if data can be written to the socket. */
-    selectStatus = zsock_select( pPlaintextParams->socketDescriptor + 1,
-                                 NULL,
-                                 &writefds,
-                                 NULL,
-                                 &sendTimeout );
-
-    if( selectStatus > 0 )
+    if( pollStatus > 0 )
     {
         /* The socket is available for sending data. */
         bytesSent = ( int32_t ) zsock_send( pPlaintextParams->socketDescriptor,
@@ -212,18 +206,18 @@ int32_t Plaintext_Send( NetworkContext_t * pNetworkContext,
                                             bytesToSend,
                                             0 );
     }
-    else if( selectStatus < 0 )
+    else if( pollStatus < 0 )
     {
         /* An error occurred while polling. */
         bytesSent = -1;
     }
     else
     {
-        /* Timed out waiting for data to be sent. */
+        /* Socket is not available for sending data. */
         bytesSent = 0;
     }
 
-    if( ( selectStatus > 0 ) && ( bytesSent == 0 ) )
+    if( ( pollStatus > 0 ) && ( bytesSent == 0 ) )
     {
         /* Peer has closed the connection. Treat as an error. */
         bytesSent = -1;
