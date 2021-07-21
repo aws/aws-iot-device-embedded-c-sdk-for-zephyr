@@ -49,8 +49,6 @@
 
 /************ End of logging configuration ****************/
 
-/* Transport includes. */
-#include "transport_interface.h"
 #include "sockets_zephyr.h"
 
 /**
