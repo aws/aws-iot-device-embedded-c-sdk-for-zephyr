@@ -116,7 +116,7 @@ int32_t Plaintext_Recv( NetworkContext_t * pNetworkContext,
                         size_t bytesToRecv )
 {
     PlaintextParams_t * pPlaintextParams = NULL;
-    int32_t bytesReceived = -1, selectStatus = -1, getTimeoutStatus = -1;
+    int32_t bytesReceived = -1, selectStatus = -1;
     struct timeval recvTimeout;
     fd_set readfds;
 
@@ -179,7 +179,7 @@ int32_t Plaintext_Send( NetworkContext_t * pNetworkContext,
                         size_t bytesToSend )
 {
     PlaintextParams_t * pPlaintextParams = NULL;
-    int32_t bytesSent = -1, selectStatus = -1, getTimeoutStatus = -1;
+    int32_t bytesSent = -1, selectStatus = -1;
     struct timeval sendTimeout;
     fd_set writefds;
 
