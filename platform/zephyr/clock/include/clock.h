@@ -28,8 +28,8 @@
 #ifndef CLOCK_H_
 #define CLOCK_H_
 
-/* Standard includes. */
-#include <stdint.h>
+/* Zephyr kernel API. */
+#include <kernel.h>
 
 /**
  * @brief The timer query function.
