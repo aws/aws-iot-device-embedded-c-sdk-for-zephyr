@@ -136,8 +136,8 @@ int32_t Plaintext_Recv( NetworkContext_t * pNetworkContext,
     if( bytesToRecv == 1U )
     {
         /* Check if there is data to read (without blocking) from the socket.
-         * Note: Unlike the POSIX version, a timeout value of 0 here causes an
-         * MQTTNoDataAvailable error, possibly due to a platform limitation. */
+         * Note: A timeout value of zero causes zsock_poll to not detect data on the socket
+         * even across multiple re-tries. Thus, the smallerst non-zero block time of 1ms is used. */
         pollStatus = zsock_poll( &pollFds, 1, 1 );
     }
 
