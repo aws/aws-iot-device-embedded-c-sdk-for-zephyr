@@ -137,7 +137,7 @@ int32_t Plaintext_Recv( NetworkContext_t * pNetworkContext,
     {
         /* Check if there is data to read (without blocking) from the socket.
          * Note: A timeout value of zero causes zsock_poll to not detect data on the socket
-         * even across multiple re-tries. Thus, the smallerst non-zero block time of 1ms is used. */
+         * even across multiple re-tries. Thus, the smallest non-zero block time of 1ms is used. */
         pollStatus = zsock_poll( &pollFds, 1, 1 );
     }
 
