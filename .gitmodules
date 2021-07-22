@@ -4,3 +4,9 @@
 [submodule "libraries/standard/backoffAlgorithm"]
 	path = libraries/standard/backoffAlgorithm
 	url = https://github.com/FreeRTOS/backoffAlgorithm
+[submodule "libraries/standard/coreJSON"]
+	path = libraries/standard/coreJSON
+	url = https://github.com/FreeRTOS/coreJSON
+[submodule "libraries/aws/Device-Shadow-for-AWS-IoT-embedded-sdk"]
+	path = libraries/aws/Device-Shadow-for-AWS-IoT-embedded-sdk
+	url = https://github.com/aws/Device-Shadow-for-AWS-IoT-embedded-sdk
