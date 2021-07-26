@@ -51,6 +51,8 @@
 
 /* Transport includes. */
 #include "transport_interface.h"
+
+/* Zephyr Sockets library include. */
 #include "sockets_zephyr.h"
 
 /**
