@@ -28,8 +28,6 @@
 /* Zephyr socket includes. */
 #include <net/socket.h>
 
-#include "sockets_zephyr.h"
-
 #include "plaintext_zephyr.h"
 
 /*-----------------------------------------------------------*/

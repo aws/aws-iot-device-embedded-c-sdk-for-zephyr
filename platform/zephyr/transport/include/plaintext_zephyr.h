@@ -51,6 +51,7 @@
 
 /* Transport includes. */
 #include "transport_interface.h"
+#include "sockets_zephyr.h"
 
 /**
  * @brief Parameters for the transport-interface
