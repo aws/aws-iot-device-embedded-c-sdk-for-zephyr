@@ -10,3 +10,6 @@
 [submodule "libraries/aws/Device-Shadow-for-AWS-IoT-embedded-sdk"]
 	path = libraries/aws/Device-Shadow-for-AWS-IoT-embedded-sdk
 	url = https://github.com/aws/Device-Shadow-for-AWS-IoT-embedded-sdk
+[submodule "libraries/standard/coreHTTP"]
+	path = libraries/standard/coreHTTP
+	url = https://github.com/FreeRTOS/coreHTTP
