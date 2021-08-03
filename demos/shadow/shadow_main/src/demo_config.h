@@ -1,6 +1,6 @@
 /*
- * AWS IoT Device SDK for Embedded C 202103.00
- * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * AWS IoT Device Embedded C SDK for ZephyrRTOS
+ * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -41,7 +41,7 @@
     #define LIBRARY_LOG_NAME     "SHADOW_DEMO"
 #endif
 #ifndef LIBRARY_LOG_LEVEL
-    #define LIBRARY_LOG_LEVEL    LOG_INFO
+    #define LIBRARY_LOG_LEVEL    LOG_DEBUG
 #endif
 
 #include "logging_stack.h"
@@ -51,7 +51,7 @@
 
 /**
  * @brief Details of the MQTT broker to connect to.
- *
+ * 
  * This is the Thing's Rest API Endpoint for AWS IoT.
  *
  * @note Your AWS IoT Core endpoint can be found in the AWS IoT console under
@@ -68,49 +68,71 @@
  * @note Port 443 requires use of the ALPN TLS extension with the ALPN protocol
  * name. When using port 8883, ALPN is not required.
  */
-#define AWS_MQTT_PORT    ( 8883 )
-
-/**
- * @brief Path of the file containing the server's root CA certificate.
- *
- * This certificate is used to identify the AWS IoT server and is publicly
- * available. Refer to the AWS documentation available in the link below
- * https://docs.aws.amazon.com/iot/latest/developerguide/server-authentication.html#server-authentication-certs
- *
- * Amazon's root CA certificate is automatically downloaded to the certificates
- * directory from @ref https://www.amazontrust.com/repository/AmazonRootCA1.pem
- * using the CMake build system.
- *
- * @note This certificate should be PEM-encoded.
- * @note This path is relative from the demo binary created. Update
- * ROOT_CA_CERT_PATH to the absolute path if this demo is executed from elsewhere.
- */
-#ifndef ROOT_CA_CERT_PATH
-    #define ROOT_CA_CERT_PATH    "certificates/AmazonRootCA1.crt"
+#ifndef AWS_MQTT_PORT
+    #define AWS_MQTT_PORT    ( 8883 )
 #endif
 
 /**
- * @brief Path of the file containing the client certificate.
+ * @brief Server's root CA certificate.
  *
- * Refer to the AWS documentation below for details regarding client
- * authentication.
+ * For AWS IoT MQTT broker, this certificate is used to identify the AWS IoT
+ * server and is publicly available. Refer to the AWS documentation available
+ * in the link below.
+ * https://docs.aws.amazon.com/iot/latest/developerguide/server-authentication.html#server-authentication-certs
+ *
+ * @note This certificate should be PEM-encoded.
+ *
+ * Must include the PEM header and footer:
+ * "***REMOVED***
+ * "...base64 data...\n"\
+ * ***REMOVED***"
+ *
+ * #define ROOT_CA_CERT_PEM    "...insert here..."
+ */
+#ifndef ROOT_CA_CERT_PEM
+    #define ROOT_CA_CERT_PEM    ""
+#endif
+
+/**
+ * @brief Client certificate.
+ *
+ * For AWS IoT MQTT broker, refer to the AWS documentation below for details
+ * regarding client authentication.
  * https://docs.aws.amazon.com/iot/latest/developerguide/client-authentication.html
  *
  * @note This certificate should be PEM-encoded.
  *
- * #define CLIENT_CERT_PATH    "...insert here..."
+ * Must include the PEM header and footer:
+ * "***REMOVED***
+ * "...base64 data...\n"\
+ * ***REMOVED***"
+ *
+ * #define CLIENT_CERT_PEM    "...insert here..."
  */
 
 /**
- * @brief Path of the file containing the client's private key.
+ * @brief Client's private key.
  *
- * Refer to the AWS documentation below for details regarding client
- * authentication.
+ *!!! Please note pasting a key into the header file in this manner is for
+ *!!! convenience of demonstration only and should not be done in production.
+ *!!! Never paste a production private key here!.  Production devices should
+ *!!! store keys securely, such as within a secure element.  Additionally,
+ *!!! we provide the corePKCS library that further enhances security by
+ *!!! enabling securely stored keys to be used without exposing them to
+ *!!! software.
+ *
+ * For AWS IoT MQTT broker, refer to the AWS documentation below for details
+ * regarding clientauthentication.
  * https://docs.aws.amazon.com/iot/latest/developerguide/client-authentication.html
  *
  * @note This private key should be PEM-encoded.
  *
- * #define CLIENT_PRIVATE_KEY_PATH    "...insert here..."
+ * Must include the PEM header and footer:
+ * "***REMOVED***
+ * "...base64 data...\n"\
+ * ***REMOVED***"
+ *
+ * #define CLIENT_PRIVATE_KEY_PEM    "...insert here..."
  */
 
 /**
@@ -126,7 +148,7 @@
  * @brief MQTT client identifier.
  *
  * No two clients may use the same client identifier simultaneously.
- *
+ * 
  * @note The client identifier should match the Thing name per
  * AWS IoT Security best practices:
  * https://docs.aws.amazon.com/iot/latest/developerguide/security-best-practices.html
@@ -146,21 +168,21 @@
  * The current value is given as an example. Please update for your specific
  * operating system.
  */
-#define OS_NAME                   "Ubuntu"
+#define OS_NAME                   "Zephyr"
 
 /**
  * @brief The version of the operating system that the application is running
  * on. The current value is given as an example. Please update for your specific
  * operating system version.
  */
-#define OS_VERSION                "18.04 LTS"
+#define OS_VERSION                "2.6.0"
 
 /**
  * @brief The name of the hardware platform the application is running on. The
  * current value is given as an example. Please update for your specific
  * hardware platform.
  */
-#define HARDWARE_PLATFORM_NAME    "PC"
+#define HARDWARE_PLATFORM_NAME    "ESP32"
 
 /**
  * @brief The name of the MQTT library used and its version, following an "@"

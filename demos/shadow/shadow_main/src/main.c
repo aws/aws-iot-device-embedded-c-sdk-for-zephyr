@@ -1,6 +1,6 @@
 /*
- * AWS IoT Device SDK for Embedded C 202103.00
- * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * AWS IoT Device Embedded C SDK for ZephyrRTOS
+ * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -46,13 +46,12 @@
  * has the same clientToken as previously published in the update message. That will mark the end of the demo.
  */
 
+#include <zephyr.h>
+
 /* Standard includes. */
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-
-/* POSIX includes. */
-#include <unistd.h>
 
 /* Shadow config include. */
 #include "shadow_config.h"
@@ -68,6 +67,9 @@
 
 /* shadow demo helpers header. */
 #include "shadow_demo_helpers.h"
+
+/* Wifi connection for ESP32 */
+#include "wifi_esp.h"
 
 /**
  * @brief The length of #THING_NAME.
@@ -223,6 +225,11 @@ static bool deleteResponseReceived = false;
  */
 static bool shadowDeleted = false;
 
+/**
+ * @brief Semaphore to block demo starting until board is connected to wifi.
+ */
+struct k_sem wifi_sem;
+
 /*-----------------------------------------------------------*/
 
 /**
@@ -298,7 +305,7 @@ static void deleteRejectedHandler( MQTTPublishInfo_t * pPublishInfo )
      */
 
     /* Make sure the payload is a valid json document. */
-    result = JSON_Validate( ( const char * ) pPublishInfo->pPayload,
+    result = JSON_Validate( pPublishInfo->pPayload,
                             pPublishInfo->payloadLength );
 
     if( result == JSONSuccess )
@@ -372,7 +379,7 @@ static void updateDeltaHandler( MQTTPublishInfo_t * pPublishInfo )
      */
 
     /* Make sure the payload is a valid json document. */
-    result = JSON_Validate( ( const char * ) pPublishInfo->pPayload,
+    result = JSON_Validate( pPublishInfo->pPayload,
                             pPublishInfo->payloadLength );
 
     if( result == JSONSuccess )
@@ -499,7 +506,7 @@ static void updateAcceptedHandler( MQTTPublishInfo_t * pPublishInfo )
      */
 
     /* Make sure the payload is a valid json document. */
-    result = JSON_Validate( ( const char * ) pPublishInfo->pPayload,
+    result = JSON_Validate( pPublishInfo->pPayload,
                             pPublishInfo->payloadLength );
 
     if( result == JSONSuccess )
@@ -663,8 +670,7 @@ static void eventCallback( MQTTContext_t * pMqttContext,
  * loops to process incoming messages. Those are not the focus of this demo
  * and therefore, are placed in a separate file shadow_demo_helpers.c.
  */
-int main( int argc,
-          char ** argv )
+int shadow_start()
 {
     int returnStatus = EXIT_SUCCESS;
     int demoRunCount = 0;
@@ -672,9 +678,6 @@ int main( int argc,
     /* A buffer containing the update document. It has static duration to prevent
      * it from being placed on the call stack. */
     static char updateDocument[ SHADOW_REPORTED_JSON_LENGTH + 1 ] = { 0 };
-
-    ( void ) argc;
-    ( void ) argv;
 
     do
     {
@@ -909,7 +912,7 @@ int main( int argc,
         else if( demoRunCount < SHADOW_MAX_DEMO_LOOP_COUNT )
         {
             LogWarn( ( "Demo iteration %d failed. Retrying...", demoRunCount ) );
-            sleep( DELAY_BETWEEN_DEMO_RETRY_ITERATIONS_S );
+            k_sleep( K_SECONDS( DELAY_BETWEEN_DEMO_RETRY_ITERATIONS_S ) );
         }
         /* Failed all #SHADOW_MAX_DEMO_LOOP_COUNT demo iterations. */
         else
@@ -929,3 +932,16 @@ int main( int argc,
 }
 
 /*-----------------------------------------------------------*/
+
+void main()
+{
+    k_sem_init( &wifi_sem, 0, 1 );
+
+    wifi_connect();
+
+    k_sem_take( &wifi_sem, K_FOREVER );
+
+    shadow_start();
+
+    k_sem_give( &wifi_sem );
+}
