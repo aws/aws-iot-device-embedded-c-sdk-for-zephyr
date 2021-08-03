@@ -1,6 +1,6 @@
 /*
- * AWS IoT Device SDK for Embedded C 202103.00
- * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * AWS IoT Device Embedded C SDK for ZephyrRTOS
+ * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -49,5 +49,9 @@
 
 
 /************ End of logging configuration ****************/
+
+#define HTTP_RECV_RETRY_TIMEOUT_MS    ( 5000U )
+
+#define HTTP_SEND_RETRY_TIMEOUT_MS    ( 5000U )
 
 #endif /* ifndef CORE_HTTP_CONFIG_H_ */

@@ -1,6 +1,6 @@
 /*
- * AWS IoT Device SDK for Embedded C 202103.00
- * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * AWS IoT Device Embedded C SDK for ZephyrRTOS
+ * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -19,14 +19,12 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <zephyr.h>
 
 /* Standard includes. */
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-
-/* POSIX includes. */
-#include <unistd.h>
 
 /* Include Demo Config as the first non-system header. */
 #include "demo_config.h"
@@ -37,8 +35,14 @@
 /* HTTP API header. */
 #include "core_http_client.h"
 
-/* OpenSSL transport header. */
-#include "openssl_posix.h"
+/* Mbedtls transport header. */
+#include "mbedtls_zephyr.h"
+
+/* Clock to get time. */
+#include "clock.h"
+
+/* Wifi connection for ESP32 */
+#include "wifi_esp.h"
 
 /* Check that AWS IoT Core endpoint is defined. */
 #ifndef AWS_IOT_ENDPOINT
@@ -56,17 +60,17 @@
 #endif
 
 /* Check that a path for Root CA certificate is defined. */
-#ifndef ROOT_CA_CERT_PATH
+#ifndef ROOT_CA_CERT_PEM
     #error "Please define a ROOT_CA_CERT_PATH."
 #endif
 
 /* Check that a path for the client certificate is defined. */
-#ifndef CLIENT_CERT_PATH
+#ifndef CLIENT_CERT_PEM
     #error "Please define a CLIENT_CERT_PATH."
 #endif
 
 /* Check that a path for the client's private key is defined. */
-#ifndef CLIENT_PRIVATE_KEY_PATH
+#ifndef CLIENT_PRIVATE_KEY_PEM
     #error "Please define a CLIENT_PRIVATE_KEY_PATH."
 #endif
 
@@ -122,12 +126,17 @@
  */
 static uint8_t userBuffer[ USER_BUFFER_LENGTH ];
 
+/**
+ * @brief Semaphore to block demo starting until board is connected to wifi.
+ */
+struct k_sem wifi_sem;
+
 /*-----------------------------------------------------------*/
 
 /* Each compilation unit must define the NetworkContext struct. */
 struct NetworkContext
 {
-    OpensslParams_t * pParams;
+    TlsTransportParams_t * pParams;
 };
 
 /*-----------------------------------------------------------*/
@@ -164,25 +173,29 @@ static int32_t sendHttpRequest( const TransportInterface_t * pTransportInterface
 static int32_t connectToServer( NetworkContext_t * pNetworkContext )
 {
     int32_t returnStatus = EXIT_FAILURE;
-    /* Status returned by OpenSSL transport implementation. */
-    OpensslStatus_t opensslStatus;
+    TlsTransportStatus_t tlsTranportStatus;
     /* Credentials to establish the TLS connection. */
-    OpensslCredentials_t opensslCredentials;
+    NetworkCredentials_t networkCredentials;
     /* Information about the server to send the HTTP requests. */
     ServerInfo_t serverInfo;
 
     /* Initialize TLS credentials. */
-    ( void ) memset( &opensslCredentials, 0, sizeof( opensslCredentials ) );
-    opensslCredentials.pClientCertPath = CLIENT_CERT_PATH;
-    opensslCredentials.pPrivateKeyPath = CLIENT_PRIVATE_KEY_PATH;
-    opensslCredentials.pRootCaPath = ROOT_CA_CERT_PATH;
-    opensslCredentials.sniHostName = AWS_IOT_ENDPOINT;
+    ( void ) memset( &networkCredentials, 0, sizeof( networkCredentials ) );
+    networkCredentials.pClientCert = CLIENT_CERT_PEM;
+    networkCredentials.clientCertSize = sizeof( CLIENT_CERT_PEM );
+    networkCredentials.pPrivateKey = CLIENT_PRIVATE_KEY_PEM;
+    networkCredentials.privateKeySize = sizeof( CLIENT_PRIVATE_KEY_PEM );
+    networkCredentials.pRootCa = ROOT_CA_CERT_PEM;
+    networkCredentials.rootCaSize = sizeof( ROOT_CA_CERT_PEM );
+    networkCredentials.disableSni = 0;
 
+    /* TODO: ALPN support still needs to be added/bugfixed */
     /* ALPN is required when communicating to AWS IoT Core over port 443 through HTTP. */
     if( AWS_HTTPS_PORT == 443 )
     {
-        opensslCredentials.pAlpnProtos = IOT_CORE_ALPN_PROTOCOL_NAME;
-        opensslCredentials.alpnProtosLen = strlen( IOT_CORE_ALPN_PROTOCOL_NAME );
+        const char ** alpnName = calloc( 1, sizeof( char * ) );
+        alpnName[ 0 ] = IOT_CORE_ALPN_PROTOCOL_NAME;
+        networkCredentials.pAlpnProtos = alpnName;
     }
 
     /* Initialize server information. */
@@ -197,13 +210,13 @@ static int32_t connectToServer( NetworkContext_t * pNetworkContext )
                ( int32_t ) AWS_IOT_ENDPOINT_LENGTH,
                AWS_IOT_ENDPOINT,
                AWS_HTTPS_PORT ) );
-    opensslStatus = Openssl_Connect( pNetworkContext,
-                                     &serverInfo,
-                                     &opensslCredentials,
-                                     TRANSPORT_SEND_RECV_TIMEOUT_MS,
-                                     TRANSPORT_SEND_RECV_TIMEOUT_MS );
+    tlsTranportStatus = MBedTLS_Connect( pNetworkContext,
+                                         &serverInfo,
+                                         &networkCredentials,
+                                         TRANSPORT_SEND_RECV_TIMEOUT_MS,
+                                         TRANSPORT_SEND_RECV_TIMEOUT_MS );
 
-    if( opensslStatus == OPENSSL_SUCCESS )
+    if( tlsTranportStatus == TLS_TRANSPORT_SUCCESS )
     {
         returnStatus = EXIT_SUCCESS;
     }
@@ -270,6 +283,7 @@ static int32_t sendHttpRequest( const TransportInterface_t * pTransportInterface
          * request headers is reused here. */
         response.pBuffer = userBuffer;
         response.bufferLen = USER_BUFFER_LENGTH;
+        response.getTime = Clock_GetTimeMs;
 
         LogInfo( ( "Sending HTTP %.*s request to %.*s%.*s...",
                    ( int32_t ) requestInfo.methodLen, requestInfo.pMethod,
@@ -339,8 +353,7 @@ static int32_t sendHttpRequest( const TransportInterface_t * pTransportInterface
  * @note This example is single-threaded and uses statically allocated memory.
  *
  */
-int main( int argc,
-          char ** argv )
+int http_mutual_auth_start()
 {
     /* Return value of main. */
     int32_t returnStatus = EXIT_SUCCESS;
@@ -348,17 +361,14 @@ int main( int argc,
     TransportInterface_t transportInterface;
     /* The network context for the transport layer interface. */
     NetworkContext_t networkContext;
-    OpensslParams_t opensslParams;
-
-    ( void ) argc;
-    ( void ) argv;
+    TlsTransportParams_t tlsTransportParams;
 
     /* Set the pParams member of the network context with desired transport. */
-    networkContext.pParams = &opensslParams;
+    networkContext.pParams = &tlsTransportParams;
 
     /**************************** Connect. ******************************/
 
-    /* Establish TLS connection on top of TCP connection using OpenSSL. */
+    /* Establish TLS connection on top of TCP connection using Mbedtls. */
     if( returnStatus == EXIT_SUCCESS )
     {
         LogInfo( ( "Performing TLS handshake on top of the TCP connection." ) );
@@ -385,8 +395,8 @@ int main( int argc,
     if( returnStatus == EXIT_SUCCESS )
     {
         ( void ) memset( &transportInterface, 0, sizeof( transportInterface ) );
-        transportInterface.recv = Openssl_Recv;
-        transportInterface.send = Openssl_Send;
+        transportInterface.recv = MBedTLS_recv;
+        transportInterface.send = MBedTLS_send;
         transportInterface.pNetworkContext = &networkContext;
     }
 
@@ -410,7 +420,22 @@ int main( int argc,
     /************************** Disconnect. *****************************/
 
     /* End TLS session, then close TCP connection. */
-    ( void ) Openssl_Disconnect( &networkContext );
+    ( void ) MBedTLS_Disconnect( &networkContext );
 
     return returnStatus;
+}
+
+/*-----------------------------------------------------------*/
+
+void main()
+{
+    k_sem_init( &wifi_sem, 0, 1 );
+
+    wifi_connect();
+
+    k_sem_take( &wifi_sem, K_FOREVER );
+
+    http_mutual_auth_start();
+
+    k_sem_give( &wifi_sem );
 }

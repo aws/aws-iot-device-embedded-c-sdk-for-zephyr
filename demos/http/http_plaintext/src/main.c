@@ -1,6 +1,6 @@
 /*
- * AWS IoT Device SDK for Embedded C 202103.00
- * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * AWS IoT Device Embedded C SDK for ZephyrRTOS
+ * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -19,14 +19,12 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include <zephyr.h>
 
 /* Standard includes. */
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-
-/* POSIX includes. */
-#include <unistd.h>
 
 /* Include Demo Config as the first non-system header. */
 #include "demo_config.h"
@@ -38,7 +36,13 @@
 #include "core_http_client.h"
 
 /* Plaintext sockets transport header. */
-#include "plaintext_posix.h"
+#include "plaintext_zephyr.h"
+
+/* Clock to get time. */
+#include "clock.h"
+
+/* Wifi connection for ESP32 */
+#include "wifi_esp.h"
 
 /* Check that hostname of the server is defined. */
 #ifndef SERVER_HOST
@@ -168,6 +172,11 @@ typedef struct httpMethodStrings
  */
 static uint8_t userBuffer[ USER_BUFFER_LENGTH ];
 
+/**
+ * @brief Semaphore to block demo starting until board is connected to wifi.
+ */
+struct k_sem wifi_sem;
+
 /*-----------------------------------------------------------*/
 
 /* Each compilation unit must define the NetworkContext struct. */
@@ -289,6 +298,7 @@ static int32_t sendHttpRequest( const TransportInterface_t * pTransportInterface
     /* Set the buffer used for storing request headers. */
     requestHeaders.pBuffer = userBuffer;
     requestHeaders.bufferLen = USER_BUFFER_LENGTH;
+    response.getTime = Clock_GetTimeMs;
 
     httpStatus = HTTPClient_InitializeRequestHeaders( &requestHeaders,
                                                       &requestInfo );
@@ -328,13 +338,16 @@ static int32_t sendHttpRequest( const TransportInterface_t * pTransportInterface
     {
         LogInfo( ( "Received HTTP response from %.*s%.*s...\n"
                    "Response Headers:\n%.*s\n"
-                   "Response Status:\n%u\n"
-                   "Response Body:\n%.*s\n",
+                   "Response Status:\n%u\n",
                    ( int32_t ) SERVER_HOST_LENGTH, SERVER_HOST,
                    ( int32_t ) requestInfo.pathLen, requestInfo.pPath,
                    ( int32_t ) response.headersLen, response.pHeaders,
-                   response.statusCode,
-                   ( int32_t ) response.bodyLen, response.pBody ) );
+                   response.statusCode ) );
+
+        if( response.bodyLen != 0 )
+        {
+            LogInfo( ( "Response Body: \n%.*s\n", ( int32_t ) response.bodyLen, response.pBody ) );
+        }
     }
     else
     {
@@ -367,8 +380,7 @@ static int32_t sendHttpRequest( const TransportInterface_t * pTransportInterface
  * @note This example is single-threaded and uses statically allocated memory.
  *
  */
-int main( int argc,
-          char ** argv )
+int plaintext_start()
 {
     /* Return value of main. */
     int32_t returnStatus = EXIT_SUCCESS;
@@ -393,9 +405,6 @@ int main( int argc,
         { HTTP_METHOD_PUT,  HTTP_METHOD_PUT_LENGTH  },
         { HTTP_METHOD_POST, HTTP_METHOD_POST_LENGTH }
     };
-
-    ( void ) argc;
-    ( void ) argv;
 
     /* Set the pParams member of the network context with desired transport. */
     networkContext.pParams = &plaintextParams;
@@ -466,8 +475,23 @@ int main( int argc,
         ( void ) Plaintext_Disconnect( &networkContext );
 
         LogInfo( ( "Short delay before starting the next iteration....\n" ) );
-        sleep( DEMO_LOOP_DELAY_SECONDS );
+        k_sleep( K_SECONDS( DEMO_LOOP_DELAY_SECONDS ) );
     }
 
     return returnStatus;
+}
+
+/*-----------------------------------------------------------*/
+
+void main()
+{
+    k_sem_init( &wifi_sem, 0, 1 );
+
+    wifi_connect();
+
+    k_sem_take( &wifi_sem, K_FOREVER );
+
+    plaintext_start();
+
+    k_sem_give( &wifi_sem );
 }
