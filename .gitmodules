@@ -13,3 +13,6 @@
 [submodule "libraries/standard/coreHTTP"]
 	path = libraries/standard/coreHTTP
 	url = https://github.com/FreeRTOS/coreHTTP
+[submodule "libraries/standard/coreMQTT-Agent"]
+	path = libraries/standard/coreMQTT-Agent
+	url = https://github.com/FreeRTOS/coreMQTT-Agent
