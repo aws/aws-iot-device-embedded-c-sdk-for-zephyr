@@ -1,6 +1,6 @@
 /*
- * AWS IoT Device SDK for Embedded C 202103.00
- * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * AWS IoT Device Embedded C SDK for ZephyrRTOS
+ * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -81,9 +81,9 @@
  * @note This certificate should be PEM-encoded.
  *
  * Must include the PEM header and footer:
- * "***REMOVED***
+ * "-----BEGIN CERTIFICATE-----\n"\
  * "...base64 data...\n"\
- * ***REMOVED***"
+ * "-----END CERTIFICATE-----"
  *
  * #define ROOT_CA_CERT_PEM    "...insert here..."
  */
@@ -101,9 +101,9 @@
  * @note This certificate should be PEM-encoded.
  *
  * Must include the PEM header and footer:
- * "***REMOVED***
+ * "-----BEGIN CERTIFICATE-----\n"\
  * "...base64 data...\n"\
- * ***REMOVED***"
+ * "-----END CERTIFICATE-----"
  *
  * #define CLIENT_CERT_PEM    "...insert here..."
  */
@@ -126,9 +126,9 @@
  * @note This private key should be PEM-encoded.
  *
  * Must include the PEM header and footer:
- * "***REMOVED***
+ * "-----BEGIN RSA PRIVATE KEY-----\n"\
  * "...base64 data...\n"\
- * ***REMOVED***"
+ * "-----END RSA PRIVATE KEY-----"
  *
  * #define CLIENT_PRIVATE_KEY_PEM    "...insert here..."
  */
@@ -208,5 +208,18 @@
  */
 #include "core_mqtt.h"
 #define MQTT_LIB    "core-mqtt@" MQTT_LIBRARY_VERSION
+
+/**
+ * @brief The name of the Wi-Fi network to join.
+ *
+ * #define WIFI_NETWORK_SSID        "...insert here..."
+ */
+
+/**
+ * @brief Password needed to join Wi-Fi network. If you are using WPA, set this
+ * to your network password. If there is no password, use the empty string "".
+ *
+ * #define WIFI_NETWORK_PASSWORD    "...insert here...."
+ */
 
 #endif /* ifndef DEMO_CONFIG_H_ */

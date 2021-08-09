@@ -1,6 +1,6 @@
 /*
- * AWS IoT Device SDK for Embedded C 202103.00
- * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * AWS IoT Device Embedded C SDK for ZephyrRTOS
+ * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -50,21 +50,14 @@
  * publishes are stored until a PUBACK is received.
  */
 #include <zephyr.h>
-#include <esp_wifi.h>
 
 /* Standard includes. */
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include <posix/time.h>
-
-/* POSIX includes. */
-#include <posix/unistd.h>
 
 /* Zephyr random */
 #include <random/rand32.h>
-
-#include <net/socket.h> /*for debugging dns resolve/getaddrinfo */
 
 /* Include Demo Config as the first non-system header. */
 #include "demo_config.h"
@@ -76,11 +69,15 @@
 /* mbedtls transport implementation. */
 #include "mbedtls_zephyr.h"
 
-/*Include backoff algorithm header for retry logic.*/
+/* Include backoff algorithm header for retry logic.*/
+
 #include "backoff_algorithm.h"
 
 /* Clock for timer. */
 #include "clock.h"
+
+/* Wifi connection for ESP32 */
+#include "wifi_espressif.h"
 
 /**
  * These configuration settings are required to run the mutual auth demo.
@@ -94,6 +91,12 @@
 #endif
 #ifndef CLIENT_IDENTIFIER
     #error "Please define a unique client identifier, CLIENT_IDENTIFIER, in demo_config.h."
+#endif
+#ifndef WIFI_NETWORK_SSID
+    #error "Please define the wifi network ssid, in demo_config.h."
+#endif
+#ifndef WIFI_NETWORK_PASSWORD
+    #error "Please define the wifi network's password in demo_config.h."
 #endif
 
 /* The AWS IoT message broker requires either a set of client certificate/private key
@@ -132,15 +135,15 @@
 #endif
 
 #ifndef OS_NAME
-    #define OS_NAME    "Ubuntu"
+    #define OS_NAME    "Zephyr"
 #endif
 
 #ifndef OS_VERSION
-    #define OS_VERSION    "18.04 LTS"
+    #define OS_VERSION    "2.6.0"
 #endif
 
 #ifndef HARDWARE_PLATFORM_NAME
-    #define HARDWARE_PLATFORM_NAME    "Posix"
+    #define HARDWARE_PLATFORM_NAME    "ESP32"
 #endif
 
 /**
@@ -161,7 +164,7 @@
  * in the link below.
  * https://aws.amazon.com/blogs/iot/mqtt-with-tls-client-authentication-on-port-443-why-it-is-useful-and-how-it-works/
  */
-#define AWS_IOT_MQTT_ALPN               "\x0ex-amzn-mqtt-ca"
+#define AWS_IOT_MQTT_ALPN               "x-amzn-mqtt-ca"
 
 /**
  * @brief Length of ALPN protocol name.
@@ -172,7 +175,7 @@
  * @brief This is the ALPN (Application-Layer Protocol Negotiation) string
  * required by AWS IoT for password-based authentication using TCP port 443.
  */
-#define AWS_IOT_PASSWORD_ALPN           "\x04mqtt"
+#define AWS_IOT_PASSWORD_ALPN           "mqtt"
 
 /**
  * @brief Length of password ALPN.
@@ -293,14 +296,6 @@
  */
     #define CLIENT_USERNAME_WITH_METRICS    CLIENT_USERNAME METRICS_STRING
 #endif
-
-/*-----------------------------------------------------------*/
-/*Wifi Connection Variables */
-LOG_MODULE_REGISTER( esp32_wifi_sta, LOG_LEVEL_DBG );
-
-static struct net_mgmt_event_callback dhcp_cb;
-
-struct k_sem wifi_sem;
 
 /*-----------------------------------------------------------*/
 
@@ -565,11 +560,27 @@ static void updateSubAckStatus( MQTTPacketInfo_t * pPacketInfo );
  */
 static int handleResubscribe( MQTTContext_t * pMqttContext );
 
+/**
+ * @brief Entry point of demo.
+ *
+ * The example shown below uses MQTT APIs to send and receive MQTT packets
+ * over the TLS connection established using mbedTLS.
+ *
+ * The example is single threaded and uses statically allocated memory;
+ * it uses QOS1 and therefore implements a retransmission mechanism
+ * for Publish messages. Retransmission of publish messages are attempted
+ * when a MQTT connection is established with a session that was already
+ * present. All the outgoing publish messages waiting to receive PUBACK
+ * are resent in this demo. In order to support retransmission all the outgoing
+ * publishes are stored until a PUBACK is received.
+ */
+static int start_mutual_auth_demo();
+
 /*-----------------------------------------------------------*/
 
 static uint32_t generateRandomNumber()
 {
-    return( 1000 );
+    return sys_rand32_get();
 }
 
 /*-----------------------------------------------------------*/
@@ -586,6 +597,7 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
     NetworkCredentials_t networkCredentials;
     uint16_t nextRetryBackOff;
     bool createCleanSession;
+    const char * alpn[] = { AWS_IOT_MQTT_ALPN, NULL };
 
     /* Initialize information to connect to the MQTT broker. */
     serverInfo.pHostName = AWS_IOT_ENDPOINT;
@@ -611,28 +623,11 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
      * the complete endpoint address in the host_name field. Details about
      * SNI for AWS IoT can be found in the link below.
      * https://docs.aws.amazon.com/iot/latest/developerguide/transport-security.html */
-    /*networkCredentials.sniHostName = AWS_IOT_ENDPOINT; old openssl line */
-    networkCredentials.disableSni = 0; /*0 for false */
+    networkCredentials.disableSni = 0;
 
     if( AWS_MQTT_PORT == 443 )
     {
-        /* Pass the ALPN protocol name depending on the port being used.
-         * Please see more details about the ALPN protocol for the AWS IoT MQTT
-         * endpoint in the link below.
-         * https://aws.amazon.com/blogs/iot/mqtt-with-tls-client-authentication-on-port-443-why-it-is-useful-and-how-it-works/
-         *
-         * For username and password based authentication in AWS IoT,
-         * #AWS_IOT_PASSWORD_ALPN is used. More details can be found in the
-         * link below.
-         * https://docs.aws.amazon.com/iot/latest/developerguide/custom-authentication.html
-         */
-        #ifdef CLIENT_USERNAME
-            networkCredentials.pAlpnProtos = AWS_IOT_PASSWORD_ALPN;
-            /*opensslCredentials.alpnProtosLen = AWS_IOT_PASSWORD_ALPN_LENGTH; */
-        #else
-            *networkCredentials.pAlpnProtos = AWS_IOT_MQTT_ALPN;
-            /*opensslCredentials.alpnProtosLen = AWS_IOT_MQTT_ALPN_LENGTH; */
-        #endif
+        networkCredentials.pAlpnProtos = alpn;
     }
 
     /* Initialize reconnect attempts and interval */
@@ -655,10 +650,6 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
                    AWS_IOT_ENDPOINT,
                    AWS_MQTT_PORT ) );
 
-        /*tlsTransportStatus = Sockets_Connect( &(pNetworkContext->pParams->tcpSocket),
-         *                              &serverInfo,
-         *                              TRANSPORT_SEND_RECV_TIMEOUT_MS,
-         *                              TRANSPORT_SEND_RECV_TIMEOUT_MS );*/
         tlsTransportStatus = MBedTLS_Connect( pNetworkContext,
                                               &serverInfo,
                                               &networkCredentials,
@@ -1441,7 +1432,7 @@ static int subscribePublishLoop( MQTTContext_t * pMqttContext )
             LogInfo( ( "Delay before continuing to next iteration.\n\n" ) );
 
             /* Leave connection idle for some time. */
-            sleep( DELAY_BETWEEN_PUBLISHES_SECONDS );
+            k_sleep( K_SECONDS( DELAY_BETWEEN_PUBLISHES_SECONDS ) );
         }
     }
 
@@ -1493,41 +1484,16 @@ static int subscribePublishLoop( MQTTContext_t * pMqttContext )
 
 /*-----------------------------------------------------------*/
 
-/**
- * @brief Entry point of demo.
- *
- * The example shown below uses MQTT APIs to send and receive MQTT packets
- * over the TLS connection established using OpenSSL.
- *
- * The example is single threaded and uses statically allocated memory;
- * it uses QOS1 and therefore implements a retransmission mechanism
- * for Publish messages. Retransmission of publish messages are attempted
- * when a MQTT connection is established with a session that was already
- * present. All the outgoing publish messages waiting to receive PUBACK
- * are resent in this demo. In order to support retransmission all the outgoing
- * publishes are stored until a PUBACK is received.
- */
-int mutual_auth_start()
+static int start_mutual_auth_demo()
 {
     int returnStatus = EXIT_SUCCESS;
     MQTTContext_t mqttContext = { 0 };
     NetworkContext_t networkContext = { 0 };
     TlsTransportParams_t tlsTransportParams = { 0 };
-    /*tlsTransportParams.sslContext = calloc(1, sizeof(tlsTransportParams.sslContext)); */
     bool clientSessionPresent = false, brokerSessionPresent = false;
-
-    /*struct timespec tp; */
 
     /* Set the pParams member of the network context with desired transport. */
     networkContext.pParams = &tlsTransportParams;
-
-    /* Seed pseudo random number generator (provided by ISO C standard library) for
-     * use by retry utils library when retrying failed network operations. */
-
-    /* Get current time to seed pseudo random number generator. */
-    /*( void ) clock_gettime( CLOCK_REALTIME, &tp ); */
-    /* Seed pseudo random number generator with nanoseconds. */
-    /*srand( tp.tv_nsec ); */
 
     /* Initialize MQTT library. Initialization of the MQTT library needs to be
      * done only once in this demo. */
@@ -1594,7 +1560,7 @@ int mutual_auth_start()
             ( void ) MBedTLS_Disconnect( &networkContext );
 
             LogInfo( ( "Short delay before starting the next iteration....\n" ) );
-            sleep( MQTT_SUBPUB_LOOP_DELAY_SECONDS );
+            k_sleep( K_SECONDS( MQTT_SUBPUB_LOOP_DELAY_SECONDS ) );
         }
     }
 
@@ -1603,82 +1569,16 @@ int mutual_auth_start()
 
 /*-----------------------------------------------------------*/
 
-static void handler_cb( struct net_mgmt_event_callback * cb,
-                        uint32_t mgmt_event,
-                        struct net_if * iface )
-{
-    if( mgmt_event != NET_EVENT_IPV4_DHCP_BOUND )
-    {
-        return;
-    }
-
-    char buf[ NET_IPV4_ADDR_LEN ];
-
-    printf( "Your address: %s",
-            log_strdup( net_addr_ntop( AF_INET,
-                                       &iface->config.dhcpv4.requested_ip,
-                                       buf, sizeof( buf ) ) ) );
-    printf( "Lease time: %u seconds",
-            iface->config.dhcpv4.lease_time );
-    printf( "Subnet: %s",
-            log_strdup( net_addr_ntop( AF_INET,
-                                       &iface->config.ip.ipv4->netmask,
-                                       buf, sizeof( buf ) ) ) );
-    printf( "Router: %s\n",
-            log_strdup( net_addr_ntop( AF_INET,
-                                       &iface->config.ip.ipv4->gw,
-                                       buf, sizeof( buf ) ) ) );
-
-    k_sem_give( &wifi_sem );
-}
-
 void main()
 {
-    /*WIFI CONNECTION */
-    struct net_if * iface;
+    LogInfo( ( "Connecting to WiFi network: SSID=%.*s ...", strlen( WIFI_NETWORK_SSID ), WIFI_NETWORK_SSID ) );
 
-    k_sem_init( &wifi_sem, 0, 1 );
-
-    net_mgmt_init_event_callback( &dhcp_cb, handler_cb,
-                                  NET_EVENT_IPV4_DHCP_BOUND );
-
-    net_mgmt_add_event_callback( &dhcp_cb );
-
-    iface = net_if_get_default();
-
-    if( !iface )
+    if( Wifi_Connect( WIFI_NETWORK_SSID, strlen( WIFI_NETWORK_SSID ), WIFI_NETWORK_PASSWORD, strlen( WIFI_NETWORK_PASSWORD ) ) )
     {
-        LOG_ERR( "wifi interface not available" );
-        return;
+        start_mutual_auth_demo();
     }
-
-    net_dhcpv4_start( iface );
-
-    if( !IS_ENABLED( CONFIG_ESP32_WIFI_STA_AUTO ) )
+    else
     {
-        wifi_config_t wifi_config =
-        {
-            .sta          =
-            {
-                .ssid     = CONFIG_ESP32_WIFI_SSID,
-                .password = CONFIG_ESP32_WIFI_PASSWORD,
-            },
-        };
-
-        esp_err_t ret = esp_wifi_set_mode( WIFI_MODE_STA );
-
-        ret |= esp_wifi_set_config( ESP_IF_WIFI_STA, &wifi_config );
-        ret |= esp_wifi_connect();
-
-        if( ret != ESP_OK )
-        {
-            LOG_ERR( "connection failed" );
-        }
+        LogError( "Unable to attempt wifi connection. Demo terminating." );
     }
-
-    k_sem_take( &wifi_sem, K_FOREVER );
-
-    mutual_auth_start();
-
-    k_sem_give( &wifi_sem );
 }
