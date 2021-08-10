@@ -1,6 +1,6 @@
 /*
- * FreeRTOS V202107.00
- * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * AWS IoT Device Embedded C SDK for ZephyrRTOS
+ * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -18,38 +18,32 @@
  * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- * https://www.FreeRTOS.org
- * https://github.com/FreeRTOS
- *
  */
 
 /**
- * @file tls_freertos.c
+ * @file mbedtls_zephyr.c
  * @brief TLS transport interface implementations. This implementation uses
  * mbedTLS.
  */
 
 /* Standard includes. */
+#include <assert.h>
 #include <string.h>
 
-/* FreeRTOS includes. */
-#include "FreeRTOS.h"
+/* Zephyr includes. */
+#include <net/socket.h>
+#include <random/rand32.h>
 
-/* FreeRTOS+TCP includes. */
-#include "FreeRTOS_IP.h"
-#include "FreeRTOS_Sockets.h"
+/* mbed TLS includes. */
+#include <mbedtls/error.h>
 
 /* TLS transport header. */
-#include "using_mbedtls.h"
-
-/* FreeRTOS Socket wrapper include. */
-#include "sockets_wrapper.h"
+#include "mbedtls_zephyr.h"
 
 /*-----------------------------------------------------------*/
 
-/** 
- * @brief Each compilation unit that consumes the NetworkContext must define it. 
+/**
+ * @brief Each compilation unit that consumes the NetworkContext must define it.
  * It should contain a single pointer as seen below whenever the header file
  * of this transport implementation is included to your project.
  *
@@ -79,7 +73,7 @@ static const char * pNoLowLevelMbedTlsCodeStr = "<No-Low-Level-Code>";
  * @brief Utility for converting the high-level code in an mbedTLS error to string,
  * if the code-contains a high-level code; otherwise, using a default string.
  */
-#define mbedtlsHighLevelCodeOrDefault( mbedTlsCode )        \
+#define mbedtlsHighLevelCodeOrDefault( mbedTlsCode )       \
     ( mbedtls_high_level_strerr( mbedTlsCode ) != NULL ) ? \
     mbedtls_high_level_strerr( mbedTlsCode ) : pNoHighLevelMbedTlsCodeStr
 
@@ -87,11 +81,59 @@ static const char * pNoLowLevelMbedTlsCodeStr = "<No-Low-Level-Code>";
  * @brief Utility for converting the level-level code in an mbedTLS error to string,
  * if the code-contains a level-level code; otherwise, using a default string.
  */
-#define mbedtlsLowLevelCodeOrDefault( mbedTlsCode )        \
+#define mbedtlsLowLevelCodeOrDefault( mbedTlsCode )       \
     ( mbedtls_low_level_strerr( mbedTlsCode ) != NULL ) ? \
     mbedtls_low_level_strerr( mbedTlsCode ) : pNoLowLevelMbedTlsCodeStr
 
 /*-----------------------------------------------------------*/
+
+/**
+ * @brief Sends data over TCP socket.
+ *
+ * This is the ZephyrRTOS platform specific network send function
+ * that is supplied to mbedTLS.
+ *
+ * @param[in] ctx The network context containing the socket handle.
+ * @param[in] buf Buffer containing the bytes to send.
+ * @param[in] len Number of bytes to send from the buffer.
+ *
+ * @return Number of bytes sent on success; else a negative value.
+ */
+static int mbedtls_platform_send( void * ctx,
+                                  const unsigned char * buf,
+                                  size_t len );
+
+/**
+ * @brief Receives data over TCP socket.
+ *
+ * This is the ZephyrRTOS platform specific network receive function that is
+ * supplied to mbedTLS.
+ *
+ * @param[in] ctx The network context containing the socket handle.
+ * @param[out] buf Buffer to receive bytes into.
+ * @param[in] len Number of bytes to receive from the network.
+ *
+ * @return Number of bytes received if successful; Negative value on error.
+ */
+static int mbedtls_platform_recv( void * ctx,
+                                  unsigned char * buf,
+                                  size_t len );
+
+/**
+ * @brief Function to generate a random number.
+ *
+ * @param[in] data Callback context.
+ * @param[out] output The address of the buffer that receives the random number.
+ * @param[in] len Maximum size of the random number to be generated.
+ * @param[out] olen The size, in bytes, of the #output buffer.
+ *
+ * @return 0 if no critical failures occurred,
+ * MBEDTLS_ERR_ENTROPY_SOURCE_FAILED otherwise.
+ */
+static int mbedtls_platform_entropy_poll( void * data,
+                                          unsigned char * output,
+                                          size_t len,
+                                          size_t * olen );
 
 /**
  * @brief Initialize the mbed TLS structures in a network connection.
@@ -216,9 +258,65 @@ static TlsTransportStatus_t initMbedtls( mbedtls_entropy_context * pEntropyConte
 
 /*-----------------------------------------------------------*/
 
+static int mbedtls_platform_send( void * ctx,
+                                  const unsigned char * buf,
+                                  size_t len )
+{
+    int socket = ( int ) ctx;
+    ssize_t sendStatus = zsock_send( socket, buf, len, 0 );
+
+    return sendStatus;
+}
+/*-----------------------------------------------------------*/
+
+static int mbedtls_platform_recv( void * ctx,
+                                  unsigned char * buf,
+                                  size_t len )
+{
+    int socket = ( int ) ctx;
+    ssize_t recvStatus = zsock_recv( socket, buf, len, 0 );
+
+    return recvStatus;
+}
+/*-----------------------------------------------------------*/
+
+static int mbedtls_platform_entropy_poll( void * data,
+                                          unsigned char * output,
+                                          size_t len,
+                                          size_t * olen )
+{
+    int status = 0;
+    int rngStatus = 0;
+
+    assert( output != NULL );
+    assert( olen != NULL );
+
+    /* Context is not used by this function. */
+    ( void ) data;
+
+    /* TLS requires a secure random number generator; thus, this function uses
+     * uses the RNG function provided by Zephyr.  */
+    rngStatus = sys_csrand_get( output, len );
+
+    if( rngStatus == 0 )
+    {
+        /* All random bytes generated. */
+        *olen = len;
+    }
+    else
+    {
+        /* RNG failure. */
+        *olen = 0;
+        status = MBEDTLS_ERR_ENTROPY_SOURCE_FAILED;
+    }
+
+    return status;
+}
+/*-----------------------------------------------------------*/
+
 static void sslContextInit( SSLContext_t * pSslContext )
 {
-    configASSERT( pSslContext != NULL );
+    assert( pSslContext != NULL );
 
     mbedtls_ssl_config_init( &( pSslContext->config ) );
     mbedtls_x509_crt_init( &( pSslContext->rootCa ) );
@@ -230,7 +328,7 @@ static void sslContextInit( SSLContext_t * pSslContext )
 
 static void sslContextFree( SSLContext_t * pSslContext )
 {
-    configASSERT( pSslContext != NULL );
+    assert( pSslContext != NULL );
 
     mbedtls_ssl_free( &( pSslContext->context ) );
     mbedtls_x509_crt_free( &( pSslContext->rootCa ) );
@@ -248,8 +346,8 @@ static int32_t setRootCa( SSLContext_t * pSslContext,
 {
     int32_t mbedtlsError = -1;
 
-    configASSERT( pSslContext != NULL );
-    configASSERT( pRootCa != NULL );
+    assert( pSslContext != NULL );
+    assert( pRootCa != NULL );
 
     /* Parse the server root CA certificate into the SSL context. */
     mbedtlsError = mbedtls_x509_crt_parse( &( pSslContext->rootCa ),
@@ -279,8 +377,8 @@ static int32_t setClientCertificate( SSLContext_t * pSslContext,
 {
     int32_t mbedtlsError = -1;
 
-    configASSERT( pSslContext != NULL );
-    configASSERT( pClientCert != NULL );
+    assert( pSslContext != NULL );
+    assert( pClientCert != NULL );
 
     /* Setup the client certificate. */
     mbedtlsError = mbedtls_x509_crt_parse( &( pSslContext->clientCert ),
@@ -304,8 +402,8 @@ static int32_t setPrivateKey( SSLContext_t * pSslContext,
 {
     int32_t mbedtlsError = -1;
 
-    configASSERT( pSslContext != NULL );
-    configASSERT( pPrivateKey != NULL );
+    assert( pSslContext != NULL );
+    assert( pPrivateKey != NULL );
 
     /* Setup the client private key. */
     mbedtlsError = mbedtls_pk_parse_key( &( pSslContext->privKey ),
@@ -330,8 +428,8 @@ static int32_t setCredentials( SSLContext_t * pSslContext,
 {
     int32_t mbedtlsError = -1;
 
-    configASSERT( pSslContext != NULL );
-    configASSERT( pNetworkCredentials != NULL );
+    assert( pSslContext != NULL );
+    assert( pNetworkCredentials != NULL );
 
     /* Set up the certificate security profile, starting from the default value. */
     pSslContext->certProfile = mbedtls_x509_crt_profile_default;
@@ -384,9 +482,9 @@ static void setOptionalConfigurations( SSLContext_t * pSslContext,
 {
     int32_t mbedtlsError = -1;
 
-    configASSERT( pSslContext != NULL );
-    configASSERT( pHostName != NULL );
-    configASSERT( pNetworkCredentials != NULL );
+    assert( pSslContext != NULL );
+    assert( pHostName != NULL );
+    assert( pNetworkCredentials != NULL );
 
     if( pNetworkCredentials->pAlpnProtos != NULL )
     {
@@ -404,7 +502,7 @@ static void setOptionalConfigurations( SSLContext_t * pSslContext,
     }
 
     /* Enable SNI if requested. */
-    if( pNetworkCredentials->disableSni == pdFALSE )
+    if( pNetworkCredentials->disableSni == 0 )
     {
         mbedtlsError = mbedtls_ssl_set_hostname( &( pSslContext->context ),
                                                  pHostName );
@@ -445,11 +543,11 @@ static TlsTransportStatus_t tlsSetup( NetworkContext_t * pNetworkContext,
     TlsTransportStatus_t returnStatus = TLS_TRANSPORT_SUCCESS;
     int32_t mbedtlsError = 0;
 
-    configASSERT( pNetworkContext != NULL );
-    configASSERT( pNetworkContext->pParams != NULL );
-    configASSERT( pHostName != NULL );
-    configASSERT( pNetworkCredentials != NULL );
-    configASSERT( pNetworkCredentials->pRootCa != NULL );
+    assert( pNetworkContext != NULL );
+    assert( pNetworkContext->pParams != NULL );
+    assert( pHostName != NULL );
+    assert( pNetworkCredentials != NULL );
+    assert( pNetworkCredentials->pRootCa != NULL );
 
     pTlsTransportParams = pNetworkContext->pParams;
     /* Initialize the mbed TLS context structures. */
@@ -499,9 +597,9 @@ static TlsTransportStatus_t tlsHandshake( NetworkContext_t * pNetworkContext,
     TlsTransportStatus_t returnStatus = TLS_TRANSPORT_SUCCESS;
     int32_t mbedtlsError = 0;
 
-    configASSERT( pNetworkContext != NULL );
-    configASSERT( pNetworkContext->pParams != NULL );
-    configASSERT( pNetworkCredentials != NULL );
+    assert( pNetworkContext != NULL );
+    assert( pNetworkContext->pParams != NULL );
+    assert( pNetworkCredentials != NULL );
 
     pTlsTransportParams = pNetworkContext->pParams;
     /* Initialize the mbed TLS secured connection context. */
@@ -519,12 +617,6 @@ static TlsTransportStatus_t tlsHandshake( NetworkContext_t * pNetworkContext,
     else
     {
         /* Set the underlying IO for the TLS connection. */
-
-        /* MISRA Rule 11.2 flags the following line for casting the second
-         * parameter to void *. This rule is suppressed because
-         * #mbedtls_ssl_set_bio requires the second parameter as void *.
-         */
-        /* coverity[misra_c_2012_rule_11_2_violation] */
         mbedtls_ssl_set_bio( &( pTlsTransportParams->sslContext.context ),
                              ( void * ) pTlsTransportParams->tcpSocket,
                              mbedtls_platform_send,
@@ -565,12 +657,6 @@ static TlsTransportStatus_t initMbedtls( mbedtls_entropy_context * pEntropyConte
 {
     TlsTransportStatus_t returnStatus = TLS_TRANSPORT_SUCCESS;
     int32_t mbedtlsError = 0;
-
-    /* Set the mutex functions for mbed TLS thread safety. */
-    mbedtls_threading_set_alt( mbedtls_platform_mutex_init,
-                               mbedtls_platform_mutex_free,
-                               mbedtls_platform_mutex_lock,
-                               mbedtls_platform_mutex_unlock );
 
     /* Initialize contexts for random number generation. */
     mbedtls_entropy_init( pEntropyContext );
@@ -618,16 +704,17 @@ static TlsTransportStatus_t initMbedtls( mbedtls_entropy_context * pEntropyConte
 }
 /*-----------------------------------------------------------*/
 
-TlsTransportStatus_t TLS_FreeRTOS_Connect( NetworkContext_t * pNetworkContext,
-                                           const char * pHostName,
-                                           uint16_t port,
-                                           const NetworkCredentials_t * pNetworkCredentials,
-                                           uint32_t receiveTimeoutMs,
-                                           uint32_t sendTimeoutMs )
+TlsTransportStatus_t MBedTLS_Connect( NetworkContext_t * pNetworkContext,
+                                      const ServerInfo_t * pServerInfo,
+                                      const NetworkCredentials_t * pNetworkCredentials,
+                                      uint32_t receiveTimeoutMs,
+                                      uint32_t sendTimeoutMs )
 {
     TlsTransportParams_t * pTlsTransportParams = NULL;
     TlsTransportStatus_t returnStatus = TLS_TRANSPORT_SUCCESS;
-    BaseType_t socketStatus = 0;
+    SocketStatus_t socketStatus = 0;
+
+    const char * pHostName = pServerInfo->pHostName;
 
     if( ( pNetworkContext == NULL ) ||
         ( pNetworkContext->pParams == NULL ) ||
@@ -646,18 +733,13 @@ TlsTransportStatus_t TLS_FreeRTOS_Connect( NetworkContext_t * pNetworkContext,
         LogError( ( "pRootCa cannot be NULL." ) );
         returnStatus = TLS_TRANSPORT_INVALID_PARAMETER;
     }
-    else
-    {
-        /* Empty else for MISRA 15.7 compliance. */
-    }
 
     /* Establish a TCP connection with the server. */
     if( returnStatus == TLS_TRANSPORT_SUCCESS )
     {
         pTlsTransportParams = pNetworkContext->pParams;
         socketStatus = Sockets_Connect( &( pTlsTransportParams->tcpSocket ),
-                                        pHostName,
-                                        port,
+                                        pServerInfo,
                                         receiveTimeoutMs,
                                         sendTimeoutMs );
 
@@ -695,11 +777,6 @@ TlsTransportStatus_t TLS_FreeRTOS_Connect( NetworkContext_t * pNetworkContext,
         if( ( pNetworkContext != NULL ) && ( pNetworkContext->pParams != NULL ) )
         {
             sslContextFree( &( pTlsTransportParams->sslContext ) );
-
-            if( pTlsTransportParams->tcpSocket != FREERTOS_INVALID_SOCKET )
-            {
-                ( void ) FreeRTOS_closesocket( pTlsTransportParams->tcpSocket );
-            }
         }
     }
     else
@@ -713,20 +790,20 @@ TlsTransportStatus_t TLS_FreeRTOS_Connect( NetworkContext_t * pNetworkContext,
 }
 /*-----------------------------------------------------------*/
 
-void TLS_FreeRTOS_Disconnect( NetworkContext_t * pNetworkContext )
+void MBedTLS_Disconnect( NetworkContext_t * pNetworkContext )
 {
     TlsTransportParams_t * pTlsTransportParams = NULL;
-    BaseType_t tlsStatus = 0;
+    SocketStatus_t tlsStatus = 0;
 
     if( ( pNetworkContext != NULL ) && ( pNetworkContext->pParams != NULL ) )
     {
         pTlsTransportParams = pNetworkContext->pParams;
         /* Attempting to terminate TLS connection. */
-        tlsStatus = ( BaseType_t ) mbedtls_ssl_close_notify( &( pTlsTransportParams->sslContext.context ) );
+        tlsStatus = ( SocketStatus_t ) mbedtls_ssl_close_notify( &( pTlsTransportParams->sslContext.context ) );
 
         /* Ignore the WANT_READ and WANT_WRITE return values. */
-        if( ( tlsStatus != ( BaseType_t ) MBEDTLS_ERR_SSL_WANT_READ ) &&
-            ( tlsStatus != ( BaseType_t ) MBEDTLS_ERR_SSL_WANT_WRITE ) )
+        if( ( tlsStatus != ( SocketStatus_t ) MBEDTLS_ERR_SSL_WANT_READ ) &&
+            ( tlsStatus != ( SocketStatus_t ) MBEDTLS_ERR_SSL_WANT_WRITE ) )
         {
             if( tlsStatus == 0 )
             {
@@ -756,90 +833,166 @@ void TLS_FreeRTOS_Disconnect( NetworkContext_t * pNetworkContext )
         /* Free mbed TLS contexts. */
         sslContextFree( &( pTlsTransportParams->sslContext ) );
     }
-
-    /* Clear the mutex functions for mbed TLS thread safety. */
-    mbedtls_threading_free_alt();
 }
 /*-----------------------------------------------------------*/
 
-int32_t TLS_FreeRTOS_recv( NetworkContext_t * pNetworkContext,
-                           void * pBuffer,
-                           size_t bytesToRecv )
+int32_t MBedTLS_recv( NetworkContext_t * pNetworkContext,
+                      void * pBuffer,
+                      size_t bytesToRecv )
 {
     TlsTransportParams_t * pTlsTransportParams = NULL;
-    int32_t tlsStatus = 0;
+    int32_t pollStatus = 1, tlsStatus = 0;
+    uint8_t shouldRead = 0U;
+    struct zsock_pollfd pollFds;
 
-    configASSERT( ( pNetworkContext != NULL ) && ( pNetworkContext->pParams != NULL ) );
+    assert( ( pNetworkContext != NULL ) && ( pNetworkContext->pParams != NULL ) );
 
     pTlsTransportParams = pNetworkContext->pParams;
-    tlsStatus = ( int32_t ) mbedtls_ssl_read( &( pTlsTransportParams->sslContext.context ),
-                                              pBuffer,
-                                              bytesToRecv );
 
-    if( ( tlsStatus == MBEDTLS_ERR_SSL_TIMEOUT ) ||
-        ( tlsStatus == MBEDTLS_ERR_SSL_WANT_READ ) ||
-        ( tlsStatus == MBEDTLS_ERR_SSL_WANT_WRITE ) )
-    {
-        LogDebug( ( "Failed to read data. However, a read can be retried on this error. "
-                    "mbedTLSError= %s : %s.",
-                    mbedtlsHighLevelCodeOrDefault( tlsStatus ),
-                    mbedtlsLowLevelCodeOrDefault( tlsStatus ) ) );
+    /* Initialize the file descriptor.
+     * #ZSOCK_POLLPRI corresponds to high-priority data while #ZSOCK_POLLIN corresponds
+     * to any other data that may be read. */
+    pollFds.events = ZSOCK_POLLIN | ZSOCK_POLLPRI;
+    pollFds.revents = 0;
+    /* Set the file descriptor for poll. */
+    pollFds.fd = pTlsTransportParams->tcpSocket;
 
-        /* Mark these set of errors as a timeout. The libraries may retry read
-         * on these errors. */
-        tlsStatus = 0;
-    }
-    else if( tlsStatus < 0 )
+    /* #mbedtls_ssl_get_bytes_avail returns a value > 0 if application data
+     * from the current TLS record remains to be read.
+     * This implementation will ALWAYS block when the number of bytes
+     * requested is greater than 1. Otherwise, poll the socket first
+     * as blocking may negatively impact performance by waiting for the
+     * entire duration of the socket timeout even when no data is available. */
+    if( mbedtls_ssl_get_bytes_avail( &( pTlsTransportParams->sslContext.context ) ) > 0 )
     {
-        LogError( ( "Failed to read data: mbedTLSError= %s : %s.",
-                    mbedtlsHighLevelCodeOrDefault( tlsStatus ),
-                    mbedtlsLowLevelCodeOrDefault( tlsStatus ) ) );
+        shouldRead = 1U;
     }
     else
     {
-        /* Empty else marker. */
+        /* Speculative read for the start of a payload.
+         * Note: This is done to avoid blocking when no
+         * data is available to be read from the socket.
+         * Note: A timeout value of zero causes zsock_poll to not detect data on the socket
+         * even across multiple re-tries. Thus, the smallest non-zero block time of 1ms is used. */
+        pollStatus = zsock_poll( &pollFds, 1, 1 );
+
+        if( pollStatus < 0 )
+        {
+            tlsStatus = -1;
+        }
+        else if( pollStatus == 0 )
+        {
+            /* No data available to be read from the socket. */
+            tlsStatus = 0;
+        }
+        else
+        {
+            shouldRead = 1U;
+        }
+    }
+
+    if( shouldRead == 1U )
+    {
+        tlsStatus = ( int32_t ) mbedtls_ssl_read( &( pTlsTransportParams->sslContext.context ),
+                                                  pBuffer,
+                                                  bytesToRecv );
+
+        if( ( tlsStatus == MBEDTLS_ERR_SSL_TIMEOUT ) ||
+            ( tlsStatus == MBEDTLS_ERR_SSL_WANT_READ ) ||
+            ( tlsStatus == MBEDTLS_ERR_SSL_WANT_WRITE ) )
+        {
+            LogDebug( ( "Failed to read data. However, a read can be retried on this error. "
+                        "mbedTLSError= %s : %s.",
+                        mbedtlsHighLevelCodeOrDefault( tlsStatus ),
+                        mbedtlsLowLevelCodeOrDefault( tlsStatus ) ) );
+
+            /* Mark these set of errors as a timeout. The libraries may retry read
+             * on these errors. */
+            tlsStatus = 0;
+        }
+        else if( tlsStatus < 0 )
+        {
+            LogError( ( "Failed to read data: mbedTLSError= %s : %s.",
+                        mbedtlsHighLevelCodeOrDefault( tlsStatus ),
+                        mbedtlsLowLevelCodeOrDefault( tlsStatus ) ) );
+        }
+        else
+        {
+            /* Empty else marker. */
+        }
     }
 
     return tlsStatus;
 }
 /*-----------------------------------------------------------*/
 
-int32_t TLS_FreeRTOS_send( NetworkContext_t * pNetworkContext,
-                           const void * pBuffer,
-                           size_t bytesToSend )
+int32_t MBedTLS_send( NetworkContext_t * pNetworkContext,
+                      const void * pBuffer,
+                      size_t bytesToSend )
 {
     TlsTransportParams_t * pTlsTransportParams = NULL;
     int32_t tlsStatus = 0;
+    struct zsock_pollfd pollFds;
+    int32_t pollStatus;
 
-    configASSERT( ( pNetworkContext != NULL ) && ( pNetworkContext->pParams != NULL ) );
+    assert( ( pNetworkContext != NULL ) && ( pNetworkContext->pParams != NULL ) );
 
     pTlsTransportParams = pNetworkContext->pParams;
-    tlsStatus = ( int32_t ) mbedtls_ssl_write( &( pTlsTransportParams->sslContext.context ),
-                                               pBuffer,
-                                               bytesToSend );
 
-    if( ( tlsStatus == MBEDTLS_ERR_SSL_TIMEOUT ) ||
-        ( tlsStatus == MBEDTLS_ERR_SSL_WANT_READ ) ||
-        ( tlsStatus == MBEDTLS_ERR_SSL_WANT_WRITE ) )
+    /* Initialize the file descriptor. */
+    pollFds.events = ZSOCK_POLLOUT;
+    pollFds.revents = 0;
+    /* Set the file descriptor for poll. */
+    pollFds.fd = pTlsTransportParams->tcpSocket;
+
+    /* `poll` checks if the socket is ready to send data.
+     * Note: This is done to avoid blocking on SSL_write()
+     * when TCP socket is not ready to accept more data for
+     * network transmission (possibly due to a full TX buffer). */
+    pollStatus = poll( &pollFds, 1, 0 );
+
+    if( pollStatus > 0 )
     {
-        LogDebug( ( "Failed to send data. However, send can be retried on this error. "
-                    "mbedTLSError= %s : %s.",
-                    mbedtlsHighLevelCodeOrDefault( tlsStatus ),
-                    mbedtlsLowLevelCodeOrDefault( tlsStatus ) ) );
+        tlsStatus = ( int32_t ) mbedtls_ssl_write( &( pTlsTransportParams->sslContext.context ),
+                                                   pBuffer,
+                                                   bytesToSend );
 
-        /* Mark these set of errors as a timeout. The libraries may retry send
-         * on these errors. */
-        tlsStatus = 0;
+        if( ( tlsStatus == MBEDTLS_ERR_SSL_TIMEOUT ) ||
+            ( tlsStatus == MBEDTLS_ERR_SSL_WANT_READ ) ||
+            ( tlsStatus == MBEDTLS_ERR_SSL_WANT_WRITE ) )
+        {
+            LogDebug( ( "Failed to send data. However, send can be retried on this error. "
+                        "mbedTLSError= %s : %s.",
+                        mbedtlsHighLevelCodeOrDefault( tlsStatus ),
+                        mbedtlsLowLevelCodeOrDefault( tlsStatus ) ) );
+
+            /* Mark these set of errors as a timeout. The libraries may retry send
+             * on these errors. */
+            tlsStatus = 0;
+        }
+        else if( tlsStatus < 0 )
+        {
+            LogError( ( "Failed to send data:  mbedTLSError= %s : %s.",
+                        mbedtlsHighLevelCodeOrDefault( tlsStatus ),
+                        mbedtlsLowLevelCodeOrDefault( tlsStatus ) ) );
+        }
+        else
+        {
+            /* Empty else marker. */
+        }
     }
-    else if( tlsStatus < 0 )
+    else if( pollStatus < 0 )
     {
-        LogError( ( "Failed to send data:  mbedTLSError= %s : %s.",
-                    mbedtlsHighLevelCodeOrDefault( tlsStatus ),
-                    mbedtlsLowLevelCodeOrDefault( tlsStatus ) ) );
+        /* An error occurred while polling. */
+        LogError( ( "Unable to send TLS data on network: "
+                    "An error occurred while checking availability of TCP socket %d.",
+                    pTlsTransportParams->tcpSocket ) );
+        tlsStatus = -1;
     }
     else
     {
-        /* Empty else marker. */
+        /* Socket is not available for sending data. Set return code for retrying send. */
+        tlsStatus = 0;
     }
 
     return tlsStatus;

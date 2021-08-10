@@ -1,6 +1,6 @@
 /*
- * FreeRTOS V202107.00
- * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * AWS IoT Device Embedded C SDK for ZephyrRTOS
+ * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -18,19 +18,15 @@
  * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- * https://www.FreeRTOS.org
- * https://github.com/FreeRTOS
- *
  */
 
 /**
- * @file tls_freertos.h
+ * @file mbedtls_zephyr.h
  * @brief TLS transport interface header.
  */
 
-#ifndef USING_MBEDTLS
-#define USING_MBEDTLS
+#ifndef MBEDTLS_ZEPHYR_H_
+#define MBEDTLS_ZEPHYR_H_
 
 /**************************************************/
 /******* DO NOT CHANGE the following order ********/
@@ -47,42 +43,25 @@
 
 /* Logging configuration for the Sockets. */
 #ifndef LIBRARY_LOG_NAME
-    #define LIBRARY_LOG_NAME     "TlsTransport"
+    #define LIBRARY_LOG_NAME     "MBEDTLS"
 #endif
 #ifndef LIBRARY_LOG_LEVEL
     #define LIBRARY_LOG_LEVEL    LOG_ERROR
-#endif
-
-/* Prototype for the function used to print to console on Windows simulator
- * of FreeRTOS.
- * The function prints to the console before the network is connected;
- * then a UDP port after the network has connected. */
-extern void vLoggingPrintf( const char * pcFormatString,
-                            ... );
-
-/* Map the SdkLog macro to the logging function to enable logging
- * on Windows simulator. */
-#ifndef SdkLog
-    #define SdkLog( message )    vLoggingPrintf message
 #endif
 
 #include "logging_stack.h"
 
 /************ End of logging configuration ****************/
 
-/* FreeRTOS+TCP include. */
-#include "FreeRTOS_Sockets.h"
-
-/* Transport interface include. */
+/* Socket include. */
 #include "transport_interface.h"
 
 /* mbed TLS includes. */
-#include "mbedtls/ctr_drbg.h"
-#include "mbedtls/entropy.h"
-#include "mbedtls/ssl.h"
-#include "mbedtls/threading.h"
-#include "mbedtls/x509.h"
-#include "mbedtls/error.h"
+#include <mbedtls/net_sockets.h>
+#include <mbedtls/ctr_drbg.h>
+#include <mbedtls/entropy.h>
+#include <mbedtls/ssl.h>
+#include <mbedtls/x509.h>
 
 /**
  * @brief Secured connection context.
@@ -101,11 +80,11 @@ typedef struct SSLContext
 
 /**
  * @brief Parameters for the network context of the transport interface
- * implementation that uses mbedTLS and FreeRTOS+TCP sockets.
+ * implementation that uses mbedTLS and Zephyr sockets.
  */
 typedef struct TlsTransportParams
 {
-    Socket_t tcpSocket;
+    int32_t tcpSocket;
     SSLContext_t sslContext;
 } TlsTransportParams_t;
 
@@ -127,7 +106,7 @@ typedef struct NetworkCredentials
     /**
      * @brief Disable server name indication (SNI) for a TLS session.
      */
-    BaseType_t disableSni;
+    bool disableSni;
 
     const uint8_t * pRootCa;     /**< @brief String representing a trusted server root certificate. */
     size_t rootCaSize;           /**< @brief Size associated with #NetworkCredentials.pRootCa. */
@@ -152,7 +131,7 @@ typedef enum TlsTransportStatus
 } TlsTransportStatus_t;
 
 /**
- * @brief Create a TLS connection with FreeRTOS sockets.
+ * @brief Create a TLS connection with Zephyr sockets.
  *
  * @param[out] pNetworkContext Pointer to a network context to contain the
  * initialized socket handle.
@@ -165,19 +144,18 @@ typedef enum TlsTransportStatus
  * @return #TLS_TRANSPORT_SUCCESS, #TLS_TRANSPORT_INSUFFICIENT_MEMORY, #TLS_TRANSPORT_INVALID_CREDENTIALS,
  * #TLS_TRANSPORT_HANDSHAKE_FAILED, #TLS_TRANSPORT_INTERNAL_ERROR, or #TLS_TRANSPORT_CONNECT_FAILURE.
  */
-TlsTransportStatus_t TLS_FreeRTOS_Connect( NetworkContext_t * pNetworkContext,
-                                           const char * pHostName,
-                                           uint16_t port,
-                                           const NetworkCredentials_t * pNetworkCredentials,
-                                           uint32_t receiveTimeoutMs,
-                                           uint32_t sendTimeoutMs );
+TlsTransportStatus_t MBedTLS_Connect( NetworkContext_t * pNetworkContext,
+                                      const ServerInfo_t * pServerInfo,
+                                      const NetworkCredentials_t * pNetworkCredentials,
+                                      uint32_t receiveTimeoutMs,
+                                      uint32_t sendTimeoutMs );
 
 /**
  * @brief Gracefully disconnect an established TLS connection.
  *
  * @param[in] pNetworkContext Network context.
  */
-void TLS_FreeRTOS_Disconnect( NetworkContext_t * pNetworkContext );
+void MBedTLS_Disconnect( NetworkContext_t * pNetworkContext );
 
 /**
  * @brief Receives data from an established TLS connection.
@@ -193,9 +171,9 @@ void TLS_FreeRTOS_Disconnect( NetworkContext_t * pNetworkContext );
  * 0 if the socket times out without reading any bytes;
  * negative value on error.
  */
-int32_t TLS_FreeRTOS_recv( NetworkContext_t * pNetworkContext,
-                           void * pBuffer,
-                           size_t bytesToRecv );
+int32_t MBedTLS_recv( NetworkContext_t * pNetworkContext,
+                      void * pBuffer,
+                      size_t bytesToRecv );
 
 /**
  * @brief Sends data over an established TLS connection.
@@ -211,8 +189,8 @@ int32_t TLS_FreeRTOS_recv( NetworkContext_t * pNetworkContext,
  * 0 if the socket times out without sending any bytes;
  * else a negative value to represent error.
  */
-int32_t TLS_FreeRTOS_send( NetworkContext_t * pNetworkContext,
-                           const void * pBuffer,
-                           size_t bytesToSend );
+int32_t MBedTLS_send( NetworkContext_t * pNetworkContext,
+                      const void * pBuffer,
+                      size_t bytesToSend );
 
-#endif /* ifndef USING_MBEDTLS */
+#endif /* ifndef MBEDTLS_ZEPHYR_H */
