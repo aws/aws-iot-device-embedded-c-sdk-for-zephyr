@@ -83,9 +83,9 @@
  * @note This certificate should be PEM-encoded.
  *
  * Must include the PEM header and footer:
- * "***REMOVED***
+ * "-----BEGIN CERTIFICATE-----\n"\
  * "...base64 data...\n"\
- * ***REMOVED***"
+ * "-----END CERTIFICATE-----"
  *
  * #define ROOT_CA_CERT_PEM    "...insert here..."
  */
@@ -103,9 +103,9 @@
  * @note This certificate should be PEM-encoded.
  *
  * Must include the PEM header and footer:
- * "***REMOVED***
+ * "-----BEGIN CERTIFICATE-----\n"\
  * "...base64 data...\n"\
- * ***REMOVED***"
+ * "-----END CERTIFICATE-----"
  *
  * #define CLIENT_CERT_PEM    "...insert here..."
  */
@@ -128,9 +128,9 @@
  * @note This private key should be PEM-encoded.
  *
  * Must include the PEM header and footer:
- * "***REMOVED***
+ * "-----BEGIN CERTIFICATE-----\n"\
  * "...base64 data...\n"\
- * ***REMOVED***"
+ * "-----END CERTIFICATE-----"
  *
  * #define CLIENT_PRIVATE_KEY_PEM    "...insert here..."
  */
@@ -204,5 +204,18 @@
  * @brief The length of #SHADOW_NAME.
  */
 #define SHADOW_NAME_LENGTH    ( ( uint16_t ) ( sizeof( SHADOW_NAME ) - 1 ) )
+
+/**
+ * @brief The name of the Wi-Fi network to join.
+ *
+ * #define WIFI_NETWORK_SSID        "...insert here..."
+ */
+
+/**
+ * @brief Password needed to join Wi-Fi network. If you are using WPA, set this
+ * to your network password. If there is no password, use the empty string "".
+ *
+ * #define WIFI_NETWORK_PASSWORD    "...insert here...."
+ */
 
 #endif /* ifndef DEMO_CONFIG_H_ */

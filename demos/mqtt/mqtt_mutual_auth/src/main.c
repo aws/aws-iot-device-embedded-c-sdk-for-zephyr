@@ -1579,6 +1579,6 @@ void main()
     }
     else
     {
-        LogError( "Unable to attempt wifi connection. Demo terminating." );
+        LogError( ( "Unable to attempt wifi connection. Demo terminating." ) );
     }
 }
