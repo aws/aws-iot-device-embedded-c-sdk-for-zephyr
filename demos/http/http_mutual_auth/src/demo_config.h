@@ -68,7 +68,7 @@
  * name being x-amzn-http-ca. When using port 8443, ALPN is not required.
  */
 #ifndef AWS_HTTPS_PORT
-    #define AWS_HTTPS_PORT    8443
+    #define AWS_HTTPS_PORT    443
 #endif
 
 /**
@@ -82,12 +82,15 @@
  * @note This certificate should be PEM-encoded.
  *
  * Must include the PEM header and footer:
- * "***REMOVED***
+ * "-----BEGIN CERTIFICATE-----\n"\
  * "...base64 data...\n"\
- * ***REMOVED***"
+ * "-----END CERTIFICATE-----"
  *
  * #define ROOT_CA_CERT_PEM    "...insert here..."
  */
+#ifndef ROOT_CA_CERT_PEM
+    #define ROOT_CA_CERT_PEM    ""
+#endif
 
 /**
  * @brief Client certificate.
@@ -99,9 +102,9 @@
  * @note This certificate should be PEM-encoded.
  *
  * Must include the PEM header and footer:
- * "***REMOVED***
+ * "-----BEGIN CERTIFICATE-----\n"\
  * "...base64 data...\n"\
- * ***REMOVED***"
+ * "-----END CERTIFICATE-----"
  *
  * #define CLIENT_CERT_PEM    "...insert here..."
  */
@@ -124,9 +127,9 @@
  * @note This private key should be PEM-encoded.
  *
  * Must include the PEM header and footer:
- * "***REMOVED***
+ * "-----BEGIN RSA PRIVATE KEY-----\n"\
  * "...base64 data...\n"\
- * ***REMOVED***"
+ * "-----END RSA PRIVATE KEY-----"
  *
  * #define CLIENT_PRIVATE_KEY_PEM    "...insert here..."
  */
@@ -157,5 +160,18 @@
  * @brief Request body to send for PUT and POST requests in this demo.
  */
 #define REQUEST_BODY                      "{ \"message\": \"Hello, world\" }"
+
+/**
+ * @brief The name of the Wi-Fi network to join.
+ *
+ * #define WIFI_NETWORK_SSID        "...insert here..."
+ */
+
+/**
+ * @brief Password needed to join Wi-Fi network. If you are using WPA, set this
+ * to your network password. If there is no password, use the empty string "".
+ *
+ * #define WIFI_NETWORK_PASSWORD    "...insert here...."
+ */
 
 #endif /* ifndef DEMO_CONFIG_H_ */

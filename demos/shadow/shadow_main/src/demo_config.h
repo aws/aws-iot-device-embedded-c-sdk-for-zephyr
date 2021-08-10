@@ -128,9 +128,9 @@
  * @note This private key should be PEM-encoded.
  *
  * Must include the PEM header and footer:
- * "-----BEGIN CERTIFICATE-----\n"\
+ * "-----BEGIN RSA PRIVATE KEY-----\n"\
  * "...base64 data...\n"\
- * "-----END CERTIFICATE-----"
+ * "-----END RSA PRIVATE KEY-----"
  *
  * #define CLIENT_PRIVATE_KEY_PEM    "...insert here..."
  */

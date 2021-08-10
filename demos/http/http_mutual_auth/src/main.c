@@ -42,7 +42,7 @@
 #include "clock.h"
 
 /* Wifi connection for ESP32 */
-#include "wifi_esp.h"
+#include "wifi_espressif.h"
 
 /* Check that AWS IoT Core endpoint is defined. */
 #ifndef AWS_IOT_ENDPOINT
@@ -74,12 +74,20 @@
     #error "Please define a CLIENT_PRIVATE_KEY_PATH."
 #endif
 
+/* Check that Wifi SSID and password are defined. */
+#ifndef WIFI_NETWORK_SSID
+    #error "Please define the wifi network ssid, in demo_config.h."
+#endif
+#ifndef WIFI_NETWORK_PASSWORD
+    #error "Please define the wifi network's password in demo_config.h."
+#endif
+
 /**
  * @brief ALPN protocol name to be sent as part of the ClientHello message.
  *
  * @note When using ALPN, port 443 must be used to connect to AWS IoT Core.
  */
-#define IOT_CORE_ALPN_PROTOCOL_NAME    "\x0ex-amzn-http-ca"
+#define IOT_CORE_ALPN_PROTOCOL_NAME    "x-amzn-http-ca"
 
 /* Check that transport timeout for transport send and receive is defined. */
 #ifndef TRANSPORT_SEND_RECV_TIMEOUT_MS
@@ -126,11 +134,6 @@
  */
 static uint8_t userBuffer[ USER_BUFFER_LENGTH ];
 
-/**
- * @brief Semaphore to block demo starting until board is connected to wifi.
- */
-struct k_sem wifi_sem;
-
 /*-----------------------------------------------------------*/
 
 /* Each compilation unit must define the NetworkContext struct. */
@@ -168,6 +171,21 @@ static int32_t sendHttpRequest( const TransportInterface_t * pTransportInterface
                                 const char * pPath,
                                 size_t pathLen );
 
+/**
+ * @brief Entry point of demo.
+ *
+ * This example resolves the AWS IoT Core endpoint, establishes a TCP connection,
+ * performs a mutually authenticated TLS handshake occurs such that all further
+ * communication is encrypted. After which, HTTP Client Library API is used to
+ * make a POST request to AWS IoT Core in order to publish a message to a topic
+ * named topic with QoS=1 so that all clients subscribed to the topic receive
+ * the message at least once. Any possible errors are also logged.
+ *
+ * @note This example is single-threaded and uses statically allocated memory.
+ *
+ */
+static int start_mutual_auth_demo();
+
 /*-----------------------------------------------------------*/
 
 static int32_t connectToServer( NetworkContext_t * pNetworkContext )
@@ -178,6 +196,7 @@ static int32_t connectToServer( NetworkContext_t * pNetworkContext )
     NetworkCredentials_t networkCredentials;
     /* Information about the server to send the HTTP requests. */
     ServerInfo_t serverInfo;
+    const char * alpn[] = { IOT_CORE_ALPN_PROTOCOL_NAME, NULL };
 
     /* Initialize TLS credentials. */
     ( void ) memset( &networkCredentials, 0, sizeof( networkCredentials ) );
@@ -189,13 +208,10 @@ static int32_t connectToServer( NetworkContext_t * pNetworkContext )
     networkCredentials.rootCaSize = sizeof( ROOT_CA_CERT_PEM );
     networkCredentials.disableSni = 0;
 
-    /* TODO: ALPN support still needs to be added/bugfixed */
     /* ALPN is required when communicating to AWS IoT Core over port 443 through HTTP. */
     if( AWS_HTTPS_PORT == 443 )
     {
-        const char ** alpnName = calloc( 1, sizeof( char * ) );
-        alpnName[ 0 ] = IOT_CORE_ALPN_PROTOCOL_NAME;
-        networkCredentials.pAlpnProtos = alpnName;
+        networkCredentials.pAlpnProtos = alpn;
     }
 
     /* Initialize server information. */
@@ -340,20 +356,7 @@ static int32_t sendHttpRequest( const TransportInterface_t * pTransportInterface
 
 /*-----------------------------------------------------------*/
 
-/**
- * @brief Entry point of demo.
- *
- * This example resolves the AWS IoT Core endpoint, establishes a TCP connection,
- * performs a mutually authenticated TLS handshake occurs such that all further
- * communication is encrypted. After which, HTTP Client Library API is used to
- * make a POST request to AWS IoT Core in order to publish a message to a topic
- * named topic with QoS=1 so that all clients subscribed to the topic receive
- * the message at least once. Any possible errors are also logged.
- *
- * @note This example is single-threaded and uses statically allocated memory.
- *
- */
-int http_mutual_auth_start()
+static int start_mutual_auth_demo()
 {
     /* Return value of main. */
     int32_t returnStatus = EXIT_SUCCESS;
@@ -429,13 +432,14 @@ int http_mutual_auth_start()
 
 void main()
 {
-    k_sem_init( &wifi_sem, 0, 1 );
+    LogInfo( ( "Connecting to WiFi network: SSID=%.*s ...", strlen( WIFI_NETWORK_SSID ), WIFI_NETWORK_SSID ) );
 
-    wifi_connect();
-
-    k_sem_take( &wifi_sem, K_FOREVER );
-
-    http_mutual_auth_start();
-
-    k_sem_give( &wifi_sem );
+    if( Wifi_Connect( WIFI_NETWORK_SSID, strlen( WIFI_NETWORK_SSID ), WIFI_NETWORK_PASSWORD, strlen( WIFI_NETWORK_PASSWORD ) ) )
+    {
+        start_mutual_auth_demo();
+    }
+    else
+    {
+        LogError( ( "Unable to attempt wifi connection. Demo terminating." ) );
+    }
 }
