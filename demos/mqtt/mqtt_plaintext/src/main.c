@@ -52,7 +52,7 @@
 #include "plaintext_zephyr.h"
 
 /* Wifi connection for ESP32 */
-#include "wifi_esp.h"
+#include "wifi_espressif.h"
 
 /*Include backoff algorithm header for retry logic.*/
 #include "backoff_algorithm.h"
@@ -69,6 +69,12 @@
 #endif
 #ifndef CLIENT_IDENTIFIER
     #error "Please define a unique CLIENT_IDENTIFIER in demo_config.h."
+#endif
+#ifndef WIFI_NETWORK_SSID
+    #error "Please define the wifi network ssid, in demo_config.h."
+#endif
+#ifndef WIFI_NETWORK_PASSWORD
+    #error "Please define the wifi network's password in demo_config.h."
 #endif
 
 /**
@@ -204,11 +210,6 @@ static uint8_t buffer[ NETWORK_BUFFER_SIZE ];
  * and accounts for subscription to a single topic.
  */
 static MQTTSubAckStatus_t globalSubAckStatus = MQTTSubAckFailure;
-
-/**
- * @brief Semaphore to block demo starting until board is connected to wifi.
- */
-struct k_sem wifi_sem;
 
 /*-----------------------------------------------------------*/
 
@@ -347,6 +348,20 @@ static void updateSubAckStatus( MQTTPacketInfo_t * pPacketInfo );
  * @param[in] pMqttContext MQTT context pointer.
  */
 static int handleResubscribe( MQTTContext_t * pMqttContext );
+
+/**
+ * @brief Entry point of demo.
+ *
+ * The example shown below uses MQTT APIs to send and receive MQTT packets
+ * over the TCP connection established using POSIX sockets.
+ * The example is single threaded and uses statically allocated memory;
+ * it uses QOS0 and therefore does not implement any retransmission
+ * mechanism for Publish messages. This example runs forever, if connection to
+ * the broker goes down, the code tries to reconnect to the broker with exponential
+ * backoff mechanism.
+ *
+ */
+static int start_plaintext_demo();
 
 /*-----------------------------------------------------------*/
 
@@ -1016,19 +1031,7 @@ static int subscribePublishLoop( MQTTContext_t * pMqttContext )
 
 /*-----------------------------------------------------------*/
 
-/**
- * @brief Entry point of demo.
- *
- * The example shown below uses MQTT APIs to send and receive MQTT packets
- * over the TCP connection established using POSIX sockets.
- * The example is single threaded and uses statically allocated memory;
- * it uses QOS0 and therefore does not implement any retransmission
- * mechanism for Publish messages. This example runs forever, if connection to
- * the broker goes down, the code tries to reconnect to the broker with exponential
- * backoff mechanism.
- *
- */
-int plaintext_start()
+static int start_plaintext_demo()
 {
     int returnStatus = EXIT_SUCCESS;
     MQTTContext_t mqttContext = { 0 };
@@ -1081,13 +1084,14 @@ int plaintext_start()
 
 void main()
 {
-    k_sem_init( &wifi_sem, 0, 1 );
+    LogInfo( ( "Connecting to WiFi network: SSID=%.*s ...", strlen( WIFI_NETWORK_SSID ), WIFI_NETWORK_SSID ) );
 
-    wifi_connect();
-
-    k_sem_take( &wifi_sem, K_FOREVER );
-
-    plaintext_start();
-
-    k_sem_give( &wifi_sem );
+    if( Wifi_Connect( WIFI_NETWORK_SSID, strlen( WIFI_NETWORK_SSID ), WIFI_NETWORK_PASSWORD, strlen( WIFI_NETWORK_PASSWORD ) ) )
+    {
+        start_plaintext_demo();
+    }
+    else
+    {
+        LogError( ( "Unable to attempt wifi connection. Demo terminating." ) );
+    }
 }

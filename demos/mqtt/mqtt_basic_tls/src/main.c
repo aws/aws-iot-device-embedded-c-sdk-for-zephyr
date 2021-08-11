@@ -76,6 +76,12 @@
 #ifndef CLIENT_IDENTIFIER
     #error "Please define a unique CLIENT_IDENTIFIER."
 #endif
+#ifndef WIFI_NETWORK_SSID
+    #error "Please define the wifi network ssid, in demo_config.h."
+#endif
+#ifndef WIFI_NETWORK_PASSWORD
+    #error "Please define the wifi network's password in demo_config.h."
+#endif
 
 /**
  * Provide default values for undefined configuration settings.
@@ -247,11 +253,6 @@ static uint8_t buffer[ NETWORK_BUFFER_SIZE ];
  * and accounts for subscription to a single topic.
  */
 static MQTTSubAckStatus_t globalSubAckStatus = MQTTSubAckFailure;
-
-/**
- * @brief Semaphore to block demo starting until board is connected to wifi.
- */
-struct k_sem wifi_sem;
 
 /*-----------------------------------------------------------*/
 
@@ -457,6 +458,22 @@ static void updateSubAckStatus( MQTTPacketInfo_t * pPacketInfo );
  * @param[in] pMqttContext MQTT context pointer.
  */
 static int handleResubscribe( MQTTContext_t * pMqttContext );
+
+/**
+ * @brief Entry point of demo.
+ *
+ * The example shown below uses MQTT APIs to send and receive MQTT packets
+ * over the TLS connection established using OpenSSL.
+ *
+ * The example is single threaded and uses statically allocated memory;
+ * it uses QOS2 and therefore implements a retransmission mechanism
+ * for Publish messages. Retransmission of publish messages are attempted
+ * when a MQTT connection is established with a session that was already
+ * present. All the outgoing publish messages waiting to receive PUBREC
+ * are resent in this demo. In order to support retransmission all the outgoing
+ * publishes are stored until a PUBREC is received.
+ */
+static int start_basic_tls_demo();
 
 /*-----------------------------------------------------------*/
 
@@ -1342,21 +1359,7 @@ static int subscribePublishLoop( MQTTContext_t * pMqttContext )
 
 /*-----------------------------------------------------------*/
 
-/**
- * @brief Entry point of demo.
- *
- * The example shown below uses MQTT APIs to send and receive MQTT packets
- * over the TLS connection established using OpenSSL.
- *
- * The example is single threaded and uses statically allocated memory;
- * it uses QOS2 and therefore implements a retransmission mechanism
- * for Publish messages. Retransmission of publish messages are attempted
- * when a MQTT connection is established with a session that was already
- * present. All the outgoing publish messages waiting to receive PUBREC
- * are resent in this demo. In order to support retransmission all the outgoing
- * publishes are stored until a PUBREC is received.
- */
-int basic_tls_start()
+static int start_basic_tls_demo()
 {
     int returnStatus = EXIT_SUCCESS;
     MQTTContext_t mqttContext = { 0 };
@@ -1443,13 +1446,14 @@ int basic_tls_start()
 
 void main()
 {
-    k_sem_init( &wifi_sem, 0, 1 );
+    LogInfo( ( "Connecting to WiFi network: SSID=%.*s ...", strlen( WIFI_NETWORK_SSID ), WIFI_NETWORK_SSID ) );
 
-    wifi_connect();
-
-    k_sem_take( &wifi_sem, K_FOREVER );
-
-    basic_tls_start();
-
-    k_sem_give( &wifi_sem );
+    if( Wifi_Connect( WIFI_NETWORK_SSID, strlen( WIFI_NETWORK_SSID ), WIFI_NETWORK_PASSWORD, strlen( WIFI_NETWORK_PASSWORD ) ) )
+    {
+        start_basic_tls_demo();
+    }
+    else
+    {
+        LogError( ( "Unable to attempt wifi connection. Demo terminating." ) );
+    }
 }

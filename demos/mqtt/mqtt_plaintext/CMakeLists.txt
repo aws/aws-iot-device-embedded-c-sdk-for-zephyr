@@ -24,7 +24,7 @@ include( ${CSDK_BASE}/demos/logging-stack/logging.cmake )
 include( ${CSDK_BASE}/platform/zephyr/zephyrFilePaths.cmake )
 
 #Include wifi connection function for ESP.
-include( ${CSDK_BASE}/platform/esp/espFilePaths.cmake)
+include( ${CSDK_BASE}/platform/espressif/espressifFilePaths.cmake)
 
 # Include clock.
 include( ${CSDK_BASE}/platform/zephyr/clock/clockFilePaths.cmake )

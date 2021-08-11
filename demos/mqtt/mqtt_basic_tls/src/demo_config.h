@@ -66,7 +66,7 @@
  *
  * In general, port 8883 is for secured MQTT connections.
  */
-#define BROKER_PORT        ( 8883 )
+#define BROKER_PORT    ( 8883 )
 
 /**
  * @brief Server's root CA certificate.
@@ -79,9 +79,9 @@
  * @note This certificate should be PEM-encoded.
  *
  * Must include the PEM header and footer:
- * "***REMOVED***
+ * "-----BEGIN CERTIFICATE-----\n"\
  * "...base64 data...\n"\
- * ***REMOVED***"
+ * "-----END CERTIFICATE-----"
  *
  * #define ROOT_CA_CERT_PEM    "...insert here..."
  */
@@ -94,5 +94,18 @@
 #ifndef CLIENT_IDENTIFIER
     #define CLIENT_IDENTIFIER    "testclient"
 #endif
+
+/**
+ * @brief The name of the Wi-Fi network to join.
+ *
+ * #define WIFI_NETWORK_SSID        "...insert here..."
+ */
+
+/**
+ * @brief Password needed to join Wi-Fi network. If you are using WPA, set this
+ * to your network password. If there is no password, use the empty string "".
+ *
+ * #define WIFI_NETWORK_PASSWORD    "...insert here...."
+ */
 
 #endif /* ifndef DEMO_CONFIG_H */
