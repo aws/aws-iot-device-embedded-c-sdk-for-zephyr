@@ -16,7 +16,17 @@
     * [Porting coreHTTP](#porting-corehttp)
     * [Porting AWS IoT Device Shadow](#porting-aws-iot-device-shadow)
 * [Getting Started](#getting-started)
-    * 
+    * [1. Setting Up Zepyhr](#1.-setup-zephyr)
+    * [2. Setting ESP32](#2.-setup-esp32)
+    * [3. Clone This Repository](#3.-clone-this-repository)
+    * [4. Configuring Demos](#4.-configuring-demos)
+         * [Wi-Fi Connection Setup](#wi-fi-connection-setup)
+         * [AWS IoT Account Setup](#aws-iot-account-setup)
+         * [Configuring mutual authentication demos of MQTT and HTTP](#configuring-mutual-authentication-demos-of-mqtt-and-http)
+         * [Configuring AWS IoT Device Shadow demo](#configuring-aws-iot-device-shadow-demo)
+    * [5. Building and Flashing Demos](#5.-building-and-flashing-demos)
+* [Adding C-SDK to Zephyr Application](#adding-c-sdk-to-zephyr-application)
+
 
 
 ## Overview
@@ -203,7 +213,7 @@ Edit `demo_config.h` in `demos/mqtt/mqtt_mutual_auth/` to `#define` the followin
 
 It is possible to configure `ROOT_CA_CERT_PATH` to any PEM-encoded Root CA Certificate. However, this is optional because CMake will download and set it to [AmazonRootCA1.pem](https://www.amazontrust.com/repository/AmazonRootCA1.pem) when unspecified.
 
-#### Configuring AWS IoT Device Defender and AWS IoT Device Shadow demos
+#### Configuring AWS IoT Device Shadow demo
 
 Edit `demo_config.h` in `demos/mqtt/mqtt_mutual_auth/` and `demos/http/http_mutual_auth/` to `#define` the following:
 
