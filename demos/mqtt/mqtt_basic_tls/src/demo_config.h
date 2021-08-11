@@ -1,6 +1,6 @@
 /*
- * AWS IoT Device SDK for Embedded C 202103.00
- * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * AWS IoT Device Embedded C SDK for ZephyrRTOS
+ * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -60,27 +60,31 @@
  *
  * #define BROKER_ENDPOINT               "...insert here..."
  */
-#ifndef SERVER_HOST
-    #define SERVER_HOST    "a3rpgiyb2vwk8c-ats.iot.us-west-2.amazonaws.com"
-#endif
 
 /**
  * @brief MQTT server port number.
  *
  * In general, port 8883 is for secured MQTT connections.
  */
-#define BROKER_PORT    ( 8883 )
+#define BROKER_PORT        ( 8883 )
 
 /**
- * @brief Path of the file containing the server's root CA certificate.
+ * @brief Server's root CA certificate.
  *
- * This certificate should be PEM-encoded.
+ * For AWS IoT MQTT broker, this certificate is used to identify the AWS IoT
+ * server and is publicly available. Refer to the AWS documentation available
+ * in the link below.
+ * https://docs.aws.amazon.com/iot/latest/developerguide/server-authentication.html#server-authentication-certs
  *
- * #define ROOT_CA_CERT_PATH         ".....insert here...."
+ * @note This certificate should be PEM-encoded.
+ *
+ * Must include the PEM header and footer:
+ * "***REMOVED***
+ * "...base64 data...\n"\
+ * ***REMOVED***"
+ *
+ * #define ROOT_CA_CERT_PEM    "...insert here..."
  */
-#ifndef ROOT_CA_CERT_PATH
-    #define ROOT_CA_CERT_PATH    "certificates/AmazonRootCA1.crt"
-#endif
 
 /**
  * @brief MQTT client identifier.

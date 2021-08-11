@@ -1,6 +1,6 @@
 /*
- * AWS IoT Device SDK for Embedded C 202103.00
- * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * AWS IoT Device Embedded C SDK for ZephyrRTOS
+ * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -32,14 +32,15 @@
  * mechanism for Publish messages.
  */
 
+#include <zephyr.h>
+
 /* Standard includes. */
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
-/* POSIX includes. */
-#include <unistd.h>
+/* Zephyr random */
+#include <random/rand32.h>
 
 /* Include Demo Config as the first non-system header. */
 #include "demo_config.h"
@@ -48,7 +49,10 @@
 #include "core_mqtt.h"
 
 /* Plaintext sockets transport implementation. */
-#include "plaintext_posix.h"
+#include "plaintext_zephyr.h"
+
+/* Wifi connection for ESP32 */
+#include "wifi_esp.h"
 
 /*Include backoff algorithm header for retry logic.*/
 #include "backoff_algorithm.h"
@@ -201,6 +205,11 @@ static uint8_t buffer[ NETWORK_BUFFER_SIZE ];
  */
 static MQTTSubAckStatus_t globalSubAckStatus = MQTTSubAckFailure;
 
+/**
+ * @brief Semaphore to block demo starting until board is connected to wifi.
+ */
+struct k_sem wifi_sem;
+
 /*-----------------------------------------------------------*/
 
 /* Each compilation unit must define the NetworkContext struct. */
@@ -343,7 +352,7 @@ static int handleResubscribe( MQTTContext_t * pMqttContext );
 
 static uint32_t generateRandomNumber()
 {
-    return( rand() );
+    return sys_rand32_get();
 }
 
 /*-----------------------------------------------------------*/
@@ -955,7 +964,7 @@ static int subscribePublishLoop( MQTTContext_t * pMqttContext )
             LogInfo( ( "Delay before continuing to next iteration.\n\n" ) );
 
             /* Leave connection idle for some time. */
-            sleep( DELAY_BETWEEN_PUBLISHES_SECONDS );
+            k_sleep( K_SECONDS( DELAY_BETWEEN_PUBLISHES_SECONDS ) );
         }
     }
 
@@ -1019,29 +1028,15 @@ static int subscribePublishLoop( MQTTContext_t * pMqttContext )
  * backoff mechanism.
  *
  */
-int main( int argc,
-          char ** argv )
+int plaintext_start()
 {
     int returnStatus = EXIT_SUCCESS;
     MQTTContext_t mqttContext = { 0 };
     NetworkContext_t networkContext = { 0 };
     PlaintextParams_t plaintextParams = { 0 };
-    struct timespec tp;
-
-    ( void ) argc;
-    ( void ) argv;
 
     /* Set the pParams member of the network context with desired transport. */
     networkContext.pParams = &plaintextParams;
-
-    /* Seed pseudo random number generator used in the demo for
-     * backoff period calculation when retrying failed network operations
-     * with broker. */
-
-    /* Get current time to seed pseudo random number generator. */
-    ( void ) clock_gettime( CLOCK_REALTIME, &tp );
-    /* Seed pseudo random number generator with nanoseconds. */
-    srand( tp.tv_nsec );
 
     for( ; ; )
     {
@@ -1076,10 +1071,23 @@ int main( int argc,
         ( void ) Plaintext_Disconnect( &networkContext );
 
         LogInfo( ( "Short delay before starting the next iteration....\n" ) );
-        sleep( MQTT_SUBPUB_LOOP_DELAY_SECONDS );
+        k_sleep( K_SECONDS( MQTT_SUBPUB_LOOP_DELAY_SECONDS ) );
     }
 
     return returnStatus;
 }
 
 /*-----------------------------------------------------------*/
+
+void main()
+{
+    k_sem_init( &wifi_sem, 0, 1 );
+
+    wifi_connect();
+
+    k_sem_take( &wifi_sem, K_FOREVER );
+
+    plaintext_start();
+
+    k_sem_give( &wifi_sem );
+}

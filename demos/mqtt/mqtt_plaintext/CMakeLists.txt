@@ -1,38 +1,52 @@
-set( DEMO_NAME "mqtt_demo_plaintext" )
+# SPDX-License-Identifier: Apache-2.0
+
+cmake_minimum_required( VERSION 3.13.1 )
+
+find_package( Zephyr HINTS $ENV{ZEPHYR_BASE} )
+project( mqtt_plaintext )
+
+FILE( GLOB app_sources src/*.c )
+target_sources( app PRIVATE ${app_sources} )
+
+# For getting filepaths relative to this C-SDK repository.
+get_filename_component( CSDK_BASE "${CMAKE_SOURCE_DIR}/../../.." ABSOLUTE )
 
 # Include MQTT library's source and header path variables.
-include( ${CMAKE_SOURCE_DIR}/libraries/standard/coreMQTT/mqttFilePaths.cmake )
+include( ${CSDK_BASE}/libraries/standard/coreMQTT/mqttFilePaths.cmake )
 
 # Include backoffAlgorithm library file path configuration.
-include( ${CMAKE_SOURCE_DIR}/libraries/standard/backoffAlgorithm/backoffAlgorithmFilePaths.cmake )
+include( ${CSDK_BASE}/libraries/standard/backoffAlgorithm/backoffAlgorithmFilePaths.cmake )
 
-# Demo target.
-add_executable(
-    ${DEMO_NAME}
-        "${DEMO_NAME}.c"
+# Include logging sources.
+include( ${CSDK_BASE}/demos/logging-stack/logging.cmake )
+
+#Include transport library implementations for Zephyr.
+include( ${CSDK_BASE}/platform/zephyr/zephyrFilePaths.cmake )
+
+#Include wifi connection function for ESP.
+include( ${CSDK_BASE}/platform/esp/espFilePaths.cmake)
+
+# Include clock.
+include( ${CSDK_BASE}/platform/zephyr/clock/clockFilePaths.cmake )
+
+target_sources( app
+    PRIVATE 
         ${MQTT_SOURCES}
         ${MQTT_SERIALIZER_SOURCES}
         ${BACKOFF_ALGORITHM_SOURCES}
+        ${CLOCK_SOURCES}
+        ${SOCKETS_SOURCES}
+        ${PLAINTEXT_SOURCES}
+        ${WIFI_SOURCES}
 )
 
-target_link_libraries(
-    ${DEMO_NAME}
-    PRIVATE
-        clock_posix
-        plaintext_posix
-)
-
-target_include_directories(
-    ${DEMO_NAME}
+target_include_directories( app
     PUBLIC
-        ${MQTT_INCLUDE_PUBLIC_DIRS}
+    ${MQTT_INCLUDE_PUBLIC_DIRS}
         ${BACKOFF_ALGORITHM_INCLUDE_PUBLIC_DIRS}
         ${CMAKE_CURRENT_LIST_DIR}
         ${LOGGING_INCLUDE_DIRS}
+        ${CLOCK_INCLUDE_DIRS}
+        ${COMMON_TRANSPORT_INCLUDE_PUBLIC_DIRS}
+        ${WIFI_INCLUDE_DIRS}
 )
-
-set_macro_definitions(TARGETS ${DEMO_NAME}
-                      REQUIRED
-                        "BROKER_ENDPOINT"
-                        "BROKER_PORT"
-                        "CLIENT_IDENTIFIER")
