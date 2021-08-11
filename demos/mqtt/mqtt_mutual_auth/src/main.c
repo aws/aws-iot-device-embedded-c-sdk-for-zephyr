@@ -70,7 +70,6 @@
 #include "mbedtls_zephyr.h"
 
 /* Include backoff algorithm header for retry logic.*/
-
 #include "backoff_algorithm.h"
 
 /* Clock for timer. */
