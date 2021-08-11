@@ -29,7 +29,7 @@
 /* Espressif ESP-IDF Includes. */
 #include <esp_wifi.h>
 
-#include "wifi_espressif.h"
+#include "esp_wifi_wrapper.h"
 
 LOG_MODULE_REGISTER( espressifWifiStation, LOG_LEVEL_DBG );
 
