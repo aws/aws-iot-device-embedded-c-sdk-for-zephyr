@@ -51,7 +51,7 @@
 
 /**
  * @brief Details of the MQTT broker to connect to.
- * 
+ *
  * This is the Thing's Rest API Endpoint for AWS IoT.
  *
  * @note Your AWS IoT Core endpoint can be found in the AWS IoT console under
@@ -148,7 +148,7 @@
  * @brief MQTT client identifier.
  *
  * No two clients may use the same client identifier simultaneously.
- * 
+ *
  * @note The client identifier should match the Thing name per
  * AWS IoT Security best practices:
  * https://docs.aws.amazon.com/iot/latest/developerguide/security-best-practices.html
