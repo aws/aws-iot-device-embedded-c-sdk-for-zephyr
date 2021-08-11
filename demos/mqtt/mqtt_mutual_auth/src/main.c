@@ -76,7 +76,7 @@
 #include "clock.h"
 
 /* Wifi connection for ESP32 */
-#include "wifi_espressif.h"
+#include "esp_wifi_wrapper.h"
 
 /**
  * These configuration settings are required to run the mutual auth demo.

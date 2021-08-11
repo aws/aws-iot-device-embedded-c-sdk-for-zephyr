@@ -42,7 +42,7 @@
 #include "clock.h"
 
 /* Wifi connection for ESP32 */
-#include "wifi_espressif.h"
+#include "esp_wifi_wrapper.h"
 
 /* Check that AWS IoT Core endpoint is defined. */
 #ifndef AWS_IOT_ENDPOINT
