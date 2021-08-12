@@ -79,6 +79,9 @@
  * in the link below.
  * https://docs.aws.amazon.com/iot/latest/developerguide/server-authentication.html#server-authentication-certs
  *
+ * The preset default value is of AmazonRootCA1.pem, which can be found in the link below.
+ * https://www.amazontrust.com/repository/AmazonRootCA1.pem
+ * 
  * @note This certificate should be PEM-encoded.
  *
  * Must include the PEM header and footer:
