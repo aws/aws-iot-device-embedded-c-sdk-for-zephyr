@@ -7,7 +7,7 @@
 
 # Platform ESP library source files.
 set( WIFI_SOURCES
-     ${CMAKE_CURRENT_LIST_DIR}/wifi/src/wifi_espressif.c )
+     ${CMAKE_CURRENT_LIST_DIR}/wifi/src/esp_wifi_wrapper.c )
 
 #Platform ESP library include directories.
 set( WIFI_INCLUDE_DIRS
