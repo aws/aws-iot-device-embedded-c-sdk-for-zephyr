@@ -50,10 +50,3 @@ target_include_directories( app
         ${COMMON_TRANSPORT_INCLUDE_PUBLIC_DIRS}
         ${WIFI_INCLUDE_DIRS}
 )
-
-set_macro_definitions(TARGETS mqtt_plaintext
-                      REQUIRED
-                        "BROKER_ENDPOINT"
-                        "BROKER_PORT"
-                        "CLIENT_IDENTIFIER")
-                        
