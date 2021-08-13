@@ -51,4 +51,9 @@ target_include_directories( app
         ${WIFI_INCLUDE_DIRS}
 )
 
-add_definitions( -DBROKER_ENDPOINT -DWIFI_NETWORK_SSID -DWIFI_NETWORK_PASSWORD )
+set_macro_definitions(TARGETS mqtt_plaintext
+                      REQUIRED
+                        "BROKER_ENDPOINT"
+                        "BROKER_PORT"
+                        "CLIENT_IDENTIFIER")
+                        
