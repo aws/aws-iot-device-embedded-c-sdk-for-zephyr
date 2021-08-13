@@ -47,7 +47,9 @@ jobs:
           ls
           cd ~/zephyrproject
           ls
-          cd ~/aws-iot-device-embedded-c-sdk-for-zephyr
+          cd ~/work
+          ls
+          cd ~/work/aws-iot-device-embedded-c-sdk-for-zephyr
           ls
       - name: Install Espressif and Build Hello World
         run: |
