@@ -64,4 +64,4 @@ jobs:
           west espressif update
           cd zephyr
           west build -b esp32 samples/hello_world
-          west build -b esp32 ~/work/aws-iot-device-embedded-c-sdk-for-zephyr/aws-iot-device-embedded-c-sdk-for-zephyr/demos/mqtt/mqtt_plaintext --pristine -- -DCMAKE_C_FLAGS='-DBROKER_ENDPOINT="broker-endpoint" -DWIFI_NETWORK_SSID="wifi" -DWIFI_NETWORK_PASSWORD="password"'
+          west build -b esp32 ~/work/aws-iot-device-embedded-c-sdk-for-zephyr/aws-iot-device-embedded-c-sdk-for-zephyr/demos/mqtt/mqtt_plaintext --pristine -- -DCMAKE_C_FLAGS='-DBROKER_ENDPOINT="" -DWIFI_NETWORK_SSID="" -DWIFI_NETWORK_PASSWORD=""'
