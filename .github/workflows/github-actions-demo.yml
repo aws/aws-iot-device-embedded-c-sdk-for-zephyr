@@ -41,6 +41,14 @@ jobs:
           ./zephyr-sdk-0.12.4-x86_64-linux-setup.run -- -d ~/zephyr-sdk-0.12.4
           sudo cp ~/zephyr-sdk-0.12.4/sysroots/x86_64-pokysdk-linux/usr/share/openocd/contrib/60-openocd.rules /etc/udev/rules.d
           sudo udevadm control --reload
+      - name: Exploring file paths
+        run: |
+          cd ~
+          ls
+          cd ~/zephyrproject
+          ls
+          cd ~/aws-iot-device-embedded-c-sdk-for-zephyr
+          ls
       - name: Install Espressif and Build Hello World
         run: |
           cd ~/zephyrproject
