@@ -50,3 +50,5 @@ target_include_directories( app
         ${COMMON_TRANSPORT_INCLUDE_PUBLIC_DIRS}
         ${WIFI_INCLUDE_DIRS}
 )
+
+add_definitions( -DBROKER_ENDPOINT -DWIFI_NETWORK_SSID -DWIFI_NETWORK_PASSWORD )
