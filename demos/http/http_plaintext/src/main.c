@@ -42,7 +42,7 @@
 #include "clock.h"
 
 /* Wifi connection for ESP32 */
-#include "wifi_esp.h"
+#include "esp_wifi_wrapper.h"
 
 /* Check that hostname of the server is defined. */
 #ifndef SERVER_HOST
@@ -72,6 +72,14 @@
 /* Check that a path for HTTP Method POST is defined. */
 #ifndef POST_PATH
     #error "Please define a POST_PATH."
+#endif
+
+/* Check that Wifi SSID and password are defined. */
+#ifndef WIFI_NETWORK_SSID
+    #error "Please define the wifi network ssid, in demo_config.h."
+#endif
+#ifndef WIFI_NETWORK_PASSWORD
+    #error "Please define the wifi network's password in demo_config.h."
 #endif
 
 /**
@@ -172,11 +180,6 @@ typedef struct httpMethodStrings
  */
 static uint8_t userBuffer[ USER_BUFFER_LENGTH ];
 
-/**
- * @brief Semaphore to block demo starting until board is connected to wifi.
- */
-struct k_sem wifi_sem;
-
 /*-----------------------------------------------------------*/
 
 /* Each compilation unit must define the NetworkContext struct. */
@@ -213,6 +216,20 @@ static int32_t sendHttpRequest( const TransportInterface_t * pTransportInterface
                                 size_t methodLen,
                                 const char * pPath,
                                 size_t pathLen );
+
+/**
+ * @brief Entry point of demo.
+ *
+ * This example resolves a domain, then establishes a TCP connection with an
+ * HTTP server to demonstrate HTTP request/response communication without using
+ * an encrypted channel (i.e. without TLS). After which, HTTP Client library API
+ * is used to send a GET, HEAD, PUT, and POST request in that order. For each
+ * request, the HTTP response from the server (or an error code) is logged.
+ *
+ * @note This example is single-threaded and uses statically allocated memory.
+ *
+ */
+static int start_plaintext_demo();
 
 /*-----------------------------------------------------------*/
 
@@ -368,19 +385,7 @@ static int32_t sendHttpRequest( const TransportInterface_t * pTransportInterface
 
 /*-----------------------------------------------------------*/
 
-/**
- * @brief Entry point of demo.
- *
- * This example resolves a domain, then establishes a TCP connection with an
- * HTTP server to demonstrate HTTP request/response communication without using
- * an encrypted channel (i.e. without TLS). After which, HTTP Client library API
- * is used to send a GET, HEAD, PUT, and POST request in that order. For each
- * request, the HTTP response from the server (or an error code) is logged.
- *
- * @note This example is single-threaded and uses statically allocated memory.
- *
- */
-int plaintext_start()
+static int start_plaintext_demo()
 {
     /* Return value of main. */
     int32_t returnStatus = EXIT_SUCCESS;
@@ -485,13 +490,14 @@ int plaintext_start()
 
 void main()
 {
-    k_sem_init( &wifi_sem, 0, 1 );
+    LogInfo( ( "Connecting to WiFi network: SSID=%.*s ...", strlen( WIFI_NETWORK_SSID ), WIFI_NETWORK_SSID ) );
 
-    wifi_connect();
-
-    k_sem_take( &wifi_sem, K_FOREVER );
-
-    plaintext_start();
-
-    k_sem_give( &wifi_sem );
+    if( Wifi_Connect( WIFI_NETWORK_SSID, strlen( WIFI_NETWORK_SSID ), WIFI_NETWORK_PASSWORD, strlen( WIFI_NETWORK_PASSWORD ) ) )
+    {
+        start_plaintext_demo();
+    }
+    else
+    {
+        LogError( ( "Unable to attempt wifi connection. Demo terminating." ) );
+    }
 }

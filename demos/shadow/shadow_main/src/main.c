@@ -69,7 +69,7 @@
 #include "shadow_demo_helpers.h"
 
 /* Wifi connection for ESP32 */
-#include "wifi_esp.h"
+#include "esp_wifi_wrapper.h"
 
 /**
  * @brief The length of #THING_NAME.
@@ -225,11 +225,6 @@ static bool deleteResponseReceived = false;
  */
 static bool shadowDeleted = false;
 
-/**
- * @brief Semaphore to block demo starting until board is connected to wifi.
- */
-struct k_sem wifi_sem;
-
 /*-----------------------------------------------------------*/
 
 /**
@@ -280,6 +275,29 @@ static void updateAcceptedHandler( MQTTPublishInfo_t * pPublishInfo );
  * packet.
  */
 static void deleteRejectedHandler( MQTTPublishInfo_t * pPublishInfo );
+
+/**
+ * @brief Entry point of shadow demo.
+ *
+ * This main function demonstrates how to use the macros provided by the
+ * Device Shadow library to assemble strings for the MQTT topics defined
+ * by AWS IoT Device Shadow. Named shadow topic strings differ from unnamed
+ * ("Classic") topic strings as indicated by the tokens within square brackets.
+ *
+ * The main function uses these macros for topics to subscribe to:
+ * - SHADOW_TOPIC_STR_UPDATE_DELTA for "$aws/things/thingName/shadow[/name/shadowname]/update/delta"
+ * - SHADOW_TOPIC_STR_UPDATE_ACC for "$aws/things/thingName/shadow[/name/shadowname]/update/accepted"
+ * - SHADOW_TOPIC_STR_UPDATE_REJ for "$aws/things/thingName/shadow[/name/shadowname]/update/rejected"
+ *
+ * It also uses these macros for topics to publish to:
+ * - SHADOW_TOPIC_STR_DELETE for "$aws/things/thingName/shadow[/name/shadowname]/delete"
+ * - SHADOW_TOPIC_STR_UPDATE for "$aws/things/thingName/shadow[/name/shadowname]/update"
+ *
+ * The helper functions this demo uses for MQTT operations have internal
+ * loops to process incoming messages. Those are not the focus of this demo
+ * and therefore, are placed in a separate file shadow_demo_helpers.c.
+ */
+static int start_shadow_demo();
 
 /*-----------------------------------------------------------*/
 
@@ -649,28 +667,7 @@ static void eventCallback( MQTTContext_t * pMqttContext,
 
 /*-----------------------------------------------------------*/
 
-/**
- * @brief Entry point of shadow demo.
- *
- * This main function demonstrates how to use the macros provided by the
- * Device Shadow library to assemble strings for the MQTT topics defined
- * by AWS IoT Device Shadow. Named shadow topic strings differ from unnamed
- * ("Classic") topic strings as indicated by the tokens within square brackets.
- *
- * The main function uses these macros for topics to subscribe to:
- * - SHADOW_TOPIC_STR_UPDATE_DELTA for "$aws/things/thingName/shadow[/name/shadowname]/update/delta"
- * - SHADOW_TOPIC_STR_UPDATE_ACC for "$aws/things/thingName/shadow[/name/shadowname]/update/accepted"
- * - SHADOW_TOPIC_STR_UPDATE_REJ for "$aws/things/thingName/shadow[/name/shadowname]/update/rejected"
- *
- * It also uses these macros for topics to publish to:
- * - SHADOW_TOPIC_STR_DELETE for "$aws/things/thingName/shadow[/name/shadowname]/delete"
- * - SHADOW_TOPIC_STR_UPDATE for "$aws/things/thingName/shadow[/name/shadowname]/update"
- *
- * The helper functions this demo uses for MQTT operations have internal
- * loops to process incoming messages. Those are not the focus of this demo
- * and therefore, are placed in a separate file shadow_demo_helpers.c.
- */
-int shadow_start()
+static int start_shadow_demo()
 {
     int returnStatus = EXIT_SUCCESS;
     int demoRunCount = 0;
@@ -935,13 +932,14 @@ int shadow_start()
 
 void main()
 {
-    k_sem_init( &wifi_sem, 0, 1 );
+    LogInfo( ( "Connecting to WiFi network: SSID=%.*s ...", strlen( WIFI_NETWORK_SSID ), WIFI_NETWORK_SSID ) );
 
-    wifi_connect();
-
-    k_sem_take( &wifi_sem, K_FOREVER );
-
-    shadow_start();
-
-    k_sem_give( &wifi_sem );
+    if( Wifi_Connect( WIFI_NETWORK_SSID, strlen( WIFI_NETWORK_SSID ), WIFI_NETWORK_PASSWORD, strlen( WIFI_NETWORK_PASSWORD ) ) )
+    {
+        start_shadow_demo();
+    }
+    else
+    {
+        LogError( ( "Unable to attempt wifi connection. Demo terminating." ) );
+    }
 }

@@ -70,14 +70,13 @@
 #include "mbedtls_zephyr.h"
 
 /* Include backoff algorithm header for retry logic.*/
-
 #include "backoff_algorithm.h"
 
 /* Clock for timer. */
 #include "clock.h"
 
 /* Wifi connection for ESP32 */
-#include "wifi_espressif.h"
+#include "esp_wifi_wrapper.h"
 
 /**
  * These configuration settings are required to run the mutual auth demo.
@@ -1579,6 +1578,6 @@ void main()
     }
     else
     {
-        LogError( "Unable to attempt wifi connection. Demo terminating." );
+        LogError( ( "Unable to attempt wifi connection. Demo terminating." ) );
     }
 }

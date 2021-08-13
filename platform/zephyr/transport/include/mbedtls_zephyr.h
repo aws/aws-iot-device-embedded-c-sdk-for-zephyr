@@ -53,8 +53,11 @@
 
 /************ End of logging configuration ****************/
 
-/* Socket include. */
+/* Transport includes. */
 #include "transport_interface.h"
+
+/* Zephyr Sockets library include. */
+#include "sockets_zephyr.h"
 
 /* mbed TLS includes. */
 #include <mbedtls/net_sockets.h>

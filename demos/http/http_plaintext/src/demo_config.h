@@ -92,4 +92,17 @@
  */
 #define REQUEST_BODY                      "Hello, world!"
 
+/**
+ * @brief The name of the Wi-Fi network to join.
+ *
+ * #define WIFI_NETWORK_SSID        "...insert here..."
+ */
+
+/**
+ * @brief Password needed to join Wi-Fi network. If you are using WPA, set this
+ * to your network password. If there is no password, use the empty string "".
+ *
+ * #define WIFI_NETWORK_PASSWORD    "...insert here...."
+ */
+
 #endif /* ifndef DEMO_CONFIG_H */

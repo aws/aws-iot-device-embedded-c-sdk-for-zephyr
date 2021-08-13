@@ -1,6 +1,6 @@
 /*
- * AWS IoT Device SDK for Embedded C 202103.00
- * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * AWS IoT Device Embedded C SDK for ZephyrRTOS
+ * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -60,9 +60,6 @@
  *
  * #define BROKER_ENDPOINT               "...insert here..."
  */
-#ifndef SERVER_HOST
-    #define SERVER_HOST    "a3rpgiyb2vwk8c-ats.iot.us-west-2.amazonaws.com"
-#endif
 
 /**
  * @brief MQTT server port number.
@@ -72,14 +69,46 @@
 #define BROKER_PORT    ( 8883 )
 
 /**
- * @brief Path of the file containing the server's root CA certificate.
+ * @brief Server's root CA certificate.
  *
- * This certificate should be PEM-encoded.
+ * For AWS IoT MQTT broker, this certificate is used to identify the AWS IoT
+ * server and is publicly available. Refer to the AWS documentation available
+ * in the link below.
+ * https://docs.aws.amazon.com/iot/latest/developerguide/server-authentication.html#server-authentication-certs
  *
- * #define ROOT_CA_CERT_PATH         ".....insert here...."
+ * The preset default value is of AmazonRootCA1.pem, which can be found in the link below.
+ * https://www.amazontrust.com/repository/AmazonRootCA1.pem
+ * 
+ * @note This certificate should be PEM-encoded.
+ *
+ * Must include the PEM header and footer:
+ * "-----BEGIN CERTIFICATE-----\n"\
+ * "...base64 data...\n"\
+ * "-----END CERTIFICATE-----"
+ *
+ * #define ROOT_CA_CERT_PEM    "...insert here..."
  */
-#ifndef ROOT_CA_CERT_PATH
-    #define ROOT_CA_CERT_PATH    "certificates/AmazonRootCA1.crt"
+#ifndef ROOT_CA_CERT_PEM
+    #define ROOT_CA_CERT_PEM    "-----BEGIN CERTIFICATE-----\n"\
+                                "MIIDQTCCAimgAwIBAgITBmyfz5m/jAo54vB4ikPmljZbyjANBgkqhkiG9w0BAQsF\n"\
+                                "ADA5MQswCQYDVQQGEwJVUzEPMA0GA1UEChMGQW1hem9uMRkwFwYDVQQDExBBbWF6\n"\
+                                "b24gUm9vdCBDQSAxMB4XDTE1MDUyNjAwMDAwMFoXDTM4MDExNzAwMDAwMFowOTEL\n"\
+                                "MAkGA1UEBhMCVVMxDzANBgNVBAoTBkFtYXpvbjEZMBcGA1UEAxMQQW1hem9uIFJv\n"\
+                                "b3QgQ0EgMTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALJ4gHHKeNXj\n"\
+                                "ca9HgFB0fW7Y14h29Jlo91ghYPl0hAEvrAIthtOgQ3pOsqTQNroBvo3bSMgHFzZM\n"\
+                                "9O6II8c+6zf1tRn4SWiw3te5djgdYZ6k/oI2peVKVuRF4fn9tBb6dNqcmzU5L/qw\n"\
+                                "IFAGbHrQgLKm+a/sRxmPUDgH3KKHOVj4utWp+UhnMJbulHheb4mjUcAwhmahRWa6\n"\
+                                "VOujw5H5SNz/0egwLX0tdHA114gk957EWW67c4cX8jJGKLhD+rcdqsq08p8kDi1L\n"\
+                                "93FcXmn/6pUCyziKrlA4b9v7LWIbxcceVOF34GfID5yHI9Y/QCB/IIDEgEw+OyQm\n"\
+                                "jgSubJrIqg0CAwEAAaNCMEAwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMC\n"\
+                                "AYYwHQYDVR0OBBYEFIQYzIU07LwMlJQuCFmcx7IQTgoIMA0GCSqGSIb3DQEBCwUA\n"\
+                                "A4IBAQCY8jdaQZChGsV2USggNiMOruYou6r4lK5IpDB/G/wkjUu0yKGX9rbxenDI\n"\
+                                "U5PMCCjjmCXPI6T53iHTfIUJrU6adTrCC2qJeHZERxhlbI1Bjjt/msv0tadQ1wUs\n"\
+                                "N+gDS63pYaACbvXy8MWy7Vu33PqUXHeeE6V/Uq2V8viTO96LXFvKWlJbYK8U90vv\n"\
+                                "o/ufQJVtMVT8QtPHRh8jrdkPSHCa2XV4cdFyQzR1bldZwgJcJmApzyMZFo6IQ6XU\n"\
+                                "5MsI+yMRQ+hDKXJioaldXgjUkK642M4UwtBV8ob2xJNDd2ZhwLnoQdeXeGADbkpy\n"\
+                                "rqXRfboQnoZsG4q5WTP468SQvvG5\n"\
+                                "-----END CERTIFICATE-----"
 #endif
 
 /**
@@ -90,5 +119,18 @@
 #ifndef CLIENT_IDENTIFIER
     #define CLIENT_IDENTIFIER    "testclient"
 #endif
+
+/**
+ * @brief The name of the Wi-Fi network to join.
+ *
+ * #define WIFI_NETWORK_SSID        "...insert here..."
+ */
+
+/**
+ * @brief Password needed to join Wi-Fi network. If you are using WPA, set this
+ * to your network password. If there is no password, use the empty string "".
+ *
+ * #define WIFI_NETWORK_PASSWORD    "...insert here...."
+ */
 
 #endif /* ifndef DEMO_CONFIG_H */
