@@ -1,6 +1,6 @@
 /*
- * AWS IoT Device SDK for Embedded C 202103.00
- * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * AWS IoT Device Embedded C SDK for ZephyrRTOS
+ * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -32,14 +32,15 @@
  * mechanism for Publish messages.
  */
 
+#include <zephyr.h>
+
 /* Standard includes. */
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
-/* POSIX includes. */
-#include <unistd.h>
+/* Zephyr random */
+#include <random/rand32.h>
 
 /* Include Demo Config as the first non-system header. */
 #include "demo_config.h"
@@ -48,7 +49,10 @@
 #include "core_mqtt.h"
 
 /* Plaintext sockets transport implementation. */
-#include "plaintext_posix.h"
+#include "plaintext_zephyr.h"
+
+/* Wifi connection for ESP32 */
+#include "esp_wifi_wrapper.h"
 
 /*Include backoff algorithm header for retry logic.*/
 #include "backoff_algorithm.h"
@@ -65,6 +69,12 @@
 #endif
 #ifndef CLIENT_IDENTIFIER
     #error "Please define a unique CLIENT_IDENTIFIER in demo_config.h."
+#endif
+#ifndef WIFI_NETWORK_SSID
+    #error "Please define the wifi network ssid, in demo_config.h."
+#endif
+#ifndef WIFI_NETWORK_PASSWORD
+    #error "Please define the wifi network's password in demo_config.h."
 #endif
 
 /**
@@ -339,11 +349,25 @@ static void updateSubAckStatus( MQTTPacketInfo_t * pPacketInfo );
  */
 static int handleResubscribe( MQTTContext_t * pMqttContext );
 
+/**
+ * @brief Entry point of demo.
+ *
+ * The example shown below uses MQTT APIs to send and receive MQTT packets
+ * over the TCP connection established using POSIX sockets.
+ * The example is single threaded and uses statically allocated memory;
+ * it uses QOS0 and therefore does not implement any retransmission
+ * mechanism for Publish messages. This example runs forever, if connection to
+ * the broker goes down, the code tries to reconnect to the broker with exponential
+ * backoff mechanism.
+ *
+ */
+static int start_plaintext_demo();
+
 /*-----------------------------------------------------------*/
 
 static uint32_t generateRandomNumber()
 {
-    return( rand() );
+    return sys_rand32_get();
 }
 
 /*-----------------------------------------------------------*/
@@ -955,7 +979,7 @@ static int subscribePublishLoop( MQTTContext_t * pMqttContext )
             LogInfo( ( "Delay before continuing to next iteration.\n\n" ) );
 
             /* Leave connection idle for some time. */
-            sleep( DELAY_BETWEEN_PUBLISHES_SECONDS );
+            k_sleep( K_SECONDS( DELAY_BETWEEN_PUBLISHES_SECONDS ) );
         }
     }
 
@@ -1007,41 +1031,15 @@ static int subscribePublishLoop( MQTTContext_t * pMqttContext )
 
 /*-----------------------------------------------------------*/
 
-/**
- * @brief Entry point of demo.
- *
- * The example shown below uses MQTT APIs to send and receive MQTT packets
- * over the TCP connection established using POSIX sockets.
- * The example is single threaded and uses statically allocated memory;
- * it uses QOS0 and therefore does not implement any retransmission
- * mechanism for Publish messages. This example runs forever, if connection to
- * the broker goes down, the code tries to reconnect to the broker with exponential
- * backoff mechanism.
- *
- */
-int main( int argc,
-          char ** argv )
+static int start_plaintext_demo()
 {
     int returnStatus = EXIT_SUCCESS;
     MQTTContext_t mqttContext = { 0 };
     NetworkContext_t networkContext = { 0 };
     PlaintextParams_t plaintextParams = { 0 };
-    struct timespec tp;
-
-    ( void ) argc;
-    ( void ) argv;
 
     /* Set the pParams member of the network context with desired transport. */
     networkContext.pParams = &plaintextParams;
-
-    /* Seed pseudo random number generator used in the demo for
-     * backoff period calculation when retrying failed network operations
-     * with broker. */
-
-    /* Get current time to seed pseudo random number generator. */
-    ( void ) clock_gettime( CLOCK_REALTIME, &tp );
-    /* Seed pseudo random number generator with nanoseconds. */
-    srand( tp.tv_nsec );
 
     for( ; ; )
     {
@@ -1076,10 +1074,24 @@ int main( int argc,
         ( void ) Plaintext_Disconnect( &networkContext );
 
         LogInfo( ( "Short delay before starting the next iteration....\n" ) );
-        sleep( MQTT_SUBPUB_LOOP_DELAY_SECONDS );
+        k_sleep( K_SECONDS( MQTT_SUBPUB_LOOP_DELAY_SECONDS ) );
     }
 
     return returnStatus;
 }
 
 /*-----------------------------------------------------------*/
+
+void main()
+{
+    LogInfo( ( "Connecting to WiFi network: SSID=%.*s ...", strlen( WIFI_NETWORK_SSID ), WIFI_NETWORK_SSID ) );
+
+    if( Wifi_Connect( WIFI_NETWORK_SSID, strlen( WIFI_NETWORK_SSID ), WIFI_NETWORK_PASSWORD, strlen( WIFI_NETWORK_PASSWORD ) ) )
+    {
+        start_plaintext_demo();
+    }
+    else
+    {
+        LogError( ( "Unable to attempt wifi connection. Demo terminating." ) );
+    }
+}

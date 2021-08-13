@@ -1,6 +1,6 @@
 /*
- * AWS IoT Device SDK for Embedded C 202103.00
- * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * AWS IoT Device Embedded C SDK for ZephyrRTOS
+ * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -34,14 +34,15 @@
  * publishes are stored until a PUBREC is received.
  */
 
+#include <zephyr.h>
+
 /* Standard includes. */
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
-/* POSIX includes. */
-#include <unistd.h>
+/* Zephyr random */
+#include <random/rand32.h>
 
 /* Include Demo Config as the first non-system header. */
 #include "demo_config.h"
@@ -50,14 +51,17 @@
 #include "core_mqtt.h"
 #include "core_mqtt_state.h"
 
-/* OpenSSL sockets transport implementation. */
-#include "openssl_posix.h"
+/* MBEDTLS sockets transport implementation. */
+#include "mbedtls_zephyr.h"
 
 /*Include backoff algorithm header for retry logic.*/
 #include "backoff_algorithm.h"
 
 /* Clock for timer. */
 #include "clock.h"
+
+/* Wifi connection for ESP32 */
+#include "esp_wifi_wrapper.h"
 
 /**
  * These configuration settings are required to run the basic TLS demo.
@@ -66,11 +70,17 @@
 #ifndef BROKER_ENDPOINT
     #error "Please define an MQTT broker endpoint, BROKER_ENDPOINT, in demo_config.h."
 #endif
-#ifndef ROOT_CA_CERT_PATH
-    #error "Please define path to Root CA certificate of the MQTT broker, ROOT_CA_CERT_PATH, in demo_config.h."
+#ifndef ROOT_CA_CERT_PEM
+    #error "Please define Root CA certificate of the MQTT broker, ROOT_CA_CERT_PEM, in demo_config.h."
 #endif
 #ifndef CLIENT_IDENTIFIER
     #error "Please define a unique CLIENT_IDENTIFIER."
+#endif
+#ifndef WIFI_NETWORK_SSID
+    #error "Please define the wifi network ssid, in demo_config.h."
+#endif
+#ifndef WIFI_NETWORK_PASSWORD
+    #error "Please define the wifi network's password in demo_config.h."
 #endif
 
 /**
@@ -249,7 +259,7 @@ static MQTTSubAckStatus_t globalSubAckStatus = MQTTSubAckFailure;
 /* Each compilation unit must define the NetworkContext struct. */
 struct NetworkContext
 {
-    OpensslParams_t * pParams;
+    TlsTransportParams_t * pParams;
 };
 
 /*-----------------------------------------------------------*/
@@ -449,11 +459,27 @@ static void updateSubAckStatus( MQTTPacketInfo_t * pPacketInfo );
  */
 static int handleResubscribe( MQTTContext_t * pMqttContext );
 
+/**
+ * @brief Entry point of demo.
+ *
+ * The example shown below uses MQTT APIs to send and receive MQTT packets
+ * over the TLS connection established using OpenSSL.
+ *
+ * The example is single threaded and uses statically allocated memory;
+ * it uses QOS2 and therefore implements a retransmission mechanism
+ * for Publish messages. Retransmission of publish messages are attempted
+ * when a MQTT connection is established with a session that was already
+ * present. All the outgoing publish messages waiting to receive PUBREC
+ * are resent in this demo. In order to support retransmission all the outgoing
+ * publishes are stored until a PUBREC is received.
+ */
+static int start_basic_tls_demo();
+
 /*-----------------------------------------------------------*/
 
 static uint32_t generateRandomNumber()
 {
-    return( rand() );
+    return sys_rand32_get();
 }
 
 /*-----------------------------------------------------------*/
@@ -464,10 +490,10 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
 {
     int returnStatus = EXIT_FAILURE;
     BackoffAlgorithmStatus_t backoffAlgStatus = BackoffAlgorithmSuccess;
-    OpensslStatus_t opensslStatus = OPENSSL_SUCCESS;
+    TlsTransportStatus_t tlsTransportStatus = TLS_TRANSPORT_SUCCESS;
     BackoffAlgorithmContext_t reconnectParams;
     ServerInfo_t serverInfo;
-    OpensslCredentials_t opensslCredentials;
+    NetworkCredentials_t networkCredentials;
     uint16_t nextRetryBackOff;
     bool createCleanSession;
 
@@ -477,9 +503,12 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
     serverInfo.port = BROKER_PORT;
 
     /* Initialize credentials for establishing TLS session. */
-    memset( &opensslCredentials, 0, sizeof( OpensslCredentials_t ) );
-    opensslCredentials.pRootCaPath = ROOT_CA_CERT_PATH;
-    opensslCredentials.sniHostName = BROKER_ENDPOINT;
+    memset( &networkCredentials, 0, sizeof( NetworkCredentials_t ) );
+    networkCredentials.pRootCa = ROOT_CA_CERT_PEM;
+    networkCredentials.rootCaSize = sizeof( ROOT_CA_CERT_PEM );
+
+    /*opensslCredentials.sniHostName = BROKER_ENDPOINT; */
+    networkCredentials.disableSni = 0;
 
     /* Initialize reconnect attempts and interval */
     BackoffAlgorithm_InitializeParams( &reconnectParams,
@@ -500,13 +529,13 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
                    BROKER_ENDPOINT_LENGTH,
                    BROKER_ENDPOINT,
                    BROKER_PORT ) );
-        opensslStatus = Openssl_Connect( pNetworkContext,
-                                         &serverInfo,
-                                         &opensslCredentials,
-                                         TRANSPORT_SEND_RECV_TIMEOUT_MS,
-                                         TRANSPORT_SEND_RECV_TIMEOUT_MS );
+        tlsTransportStatus = MBedTLS_Connect( pNetworkContext,
+                                              &serverInfo,
+                                              &networkCredentials,
+                                              TRANSPORT_SEND_RECV_TIMEOUT_MS,
+                                              TRANSPORT_SEND_RECV_TIMEOUT_MS );
 
-        if( opensslStatus == OPENSSL_SUCCESS )
+        if( tlsTransportStatus == TLS_TRANSPORT_SUCCESS )
         {
             /* A clean MQTT session needs to be created, if there is no session saved
              * in this MQTT client. */
@@ -519,7 +548,7 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
             if( returnStatus == EXIT_FAILURE )
             {
                 /* End TLS session, then close TCP connection. */
-                ( void ) Openssl_Disconnect( pNetworkContext );
+                ( void ) MBedTLS_Disconnect( pNetworkContext );
             }
         }
 
@@ -1164,10 +1193,10 @@ static int initializeMqtt( MQTTContext_t * pMqttContext,
 
     /* Fill in TransportInterface send and receive function pointers.
      * For this demo, TCP sockets are used to send and receive data
-     * from network. Network context is SSL context for OpenSSL.*/
+     * from network. Network context is SSL context for MbedTls.*/
     transport.pNetworkContext = pNetworkContext;
-    transport.send = Openssl_Send;
-    transport.recv = Openssl_Recv;
+    transport.send = MBedTLS_send;
+    transport.recv = MBedTLS_recv;
 
     /* Fill the values for network buffer. */
     networkBuffer.pBuffer = buffer;
@@ -1278,7 +1307,7 @@ static int subscribePublishLoop( MQTTContext_t * pMqttContext )
             LogInfo( ( "Delay before continuing to next iteration.\n\n" ) );
 
             /* Leave connection idle for some time. */
-            sleep( DELAY_BETWEEN_PUBLISHES_SECONDS );
+            k_sleep( K_SECONDS( DELAY_BETWEEN_PUBLISHES_SECONDS ) );
         }
     }
 
@@ -1330,43 +1359,16 @@ static int subscribePublishLoop( MQTTContext_t * pMqttContext )
 
 /*-----------------------------------------------------------*/
 
-/**
- * @brief Entry point of demo.
- *
- * The example shown below uses MQTT APIs to send and receive MQTT packets
- * over the TLS connection established using OpenSSL.
- *
- * The example is single threaded and uses statically allocated memory;
- * it uses QOS2 and therefore implements a retransmission mechanism
- * for Publish messages. Retransmission of publish messages are attempted
- * when a MQTT connection is established with a session that was already
- * present. All the outgoing publish messages waiting to receive PUBREC
- * are resent in this demo. In order to support retransmission all the outgoing
- * publishes are stored until a PUBREC is received.
- */
-int main( int argc,
-          char ** argv )
+static int start_basic_tls_demo()
 {
     int returnStatus = EXIT_SUCCESS;
     MQTTContext_t mqttContext = { 0 };
     NetworkContext_t networkContext = { 0 };
-    OpensslParams_t opensslParams = { 0 };
+    TlsTransportParams_t tlsTransportParams = { 0 };
     bool clientSessionPresent = false, brokerSessionPresent = false;
-    struct timespec tp;
-
-    ( void ) argc;
-    ( void ) argv;
 
     /* Set the pParams member of the network context with desired transport. */
-    networkContext.pParams = &opensslParams;
-
-    /* Seed pseudo random number generator (provided by ISO C standard library) for
-     * use by retry utils library when retrying failed network operations. */
-
-    /* Get current time to seed pseudo random number generator. */
-    ( void ) clock_gettime( CLOCK_REALTIME, &tp );
-    /* Seed pseudo random number generator with nanoseconds. */
-    srand( tp.tv_nsec );
+    networkContext.pParams = &tlsTransportParams;
 
     /* Initialize MQTT library. Initialization of the MQTT library needs to be
      * done only once in this demo. */
@@ -1430,10 +1432,10 @@ int main( int argc,
             }
 
             /* End TLS session, then close TCP connection. */
-            ( void ) Openssl_Disconnect( &networkContext );
+            ( void ) MBedTLS_Disconnect( &networkContext );
 
             LogInfo( ( "Short delay before starting the next iteration ....\n " ) );
-            sleep( MQTT_SUBPUB_LOOP_DELAY_SECONDS );
+            k_sleep( K_SECONDS( MQTT_SUBPUB_LOOP_DELAY_SECONDS ) );
         }
     }
 
@@ -1441,3 +1443,17 @@ int main( int argc,
 }
 
 /*-----------------------------------------------------------*/
+
+void main()
+{
+    LogInfo( ( "Connecting to WiFi network: SSID=%.*s ...", strlen( WIFI_NETWORK_SSID ), WIFI_NETWORK_SSID ) );
+
+    if( Wifi_Connect( WIFI_NETWORK_SSID, strlen( WIFI_NETWORK_SSID ), WIFI_NETWORK_PASSWORD, strlen( WIFI_NETWORK_PASSWORD ) ) )
+    {
+        start_basic_tls_demo();
+    }
+    else
+    {
+        LogError( ( "Unable to attempt wifi connection. Demo terminating." ) );
+    }
+}
