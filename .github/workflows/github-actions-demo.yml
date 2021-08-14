@@ -64,7 +64,7 @@ jobs:
           west espressif update
           cd zephyr
           west build -b esp32 samples/hello_world
-      - name: Where am I after a new run is made?
+      - name: Do I need to redo west installs?
         run: |
-          ls
+          cd ~/zephyrproject
           west build -b esp32 ~/work/aws-iot-device-embedded-c-sdk-for-zephyr/aws-iot-device-embedded-c-sdk-for-zephyr/demos/mqtt/mqtt_plaintext --pristine -- -DCMAKE_C_FLAGS=" -DBROKER_ENDPOINT=\\\"broker\\\" -DWIFI_NETWORK_SSID=\\\"wifi\\\" -DWIFI_NETWORK_PASSWORD=\\\"password\\\" "
