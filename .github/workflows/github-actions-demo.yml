@@ -19,7 +19,7 @@ jobs:
       - name: LS aws
         run: ls ~/work/aws-iot-device-embedded-c-sdk-for-zephyr/aws-iot-device-embedded-c-sdk-for-zephyr/libraries/aws
       - name: LS device shadow
-        run: ls ~/work/aws-iot-device-embedded-c-sdk-for-zephyr/aws-iot-device-embedded-c-sdk-for-zephyr/libraries/aws/device-shadow-for-aws-iot-embedded-sdk
+        run: ls ~/work/aws-iot-device-embedded-c-sdk-for-zephyr/aws-iot-device-embedded-c-sdk-for-zephyr/libraries/aws/Device-Shadow-for-AWS-IoT-embedded-sdk
       - name: Install Dependencies
         run: |
           sudo apt install --no-install-recommends git cmake ninja-build gperf \
