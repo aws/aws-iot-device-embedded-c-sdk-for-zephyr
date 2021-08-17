@@ -49,8 +49,6 @@ jobs:
           export PATH=$PATH:$ESPRESSIF_TOOLCHAIN_PATH/bin
           west update
           west espressif update
-          cd zephyr
-          west build -b esp32 samples/hello_world
       - name: MQTT Demos
         run: |
           cd ~/zephyrproject
