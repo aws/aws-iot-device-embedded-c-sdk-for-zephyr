@@ -12,14 +12,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt install --no-install-recommends ninja-build gperf \
-          ccache dfu-util device-tree-compiler \
+          ccache dfu-util \
           python3-tk \
           gcc-multilib g++-multilib libsdl2-dev
       - name: Verify Versions
         run: |
           cmake --version
           python3 --version
-          dtc --version
       - name: Install West
         run: |
           pip3 install --user -U west
