@@ -11,7 +11,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt install --no-install-recommends cmake ninja-build gperf \
+          sudo apt install --no-install-recommends ninja-build gperf \
           ccache dfu-util device-tree-compiler \
           python3-tk \
           gcc-multilib g++-multilib libsdl2-dev
