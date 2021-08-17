@@ -12,13 +12,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt install --no-install-recommends ninja-build gperf \
-          ccache dfu-util \
+          ccache dfu-util device-tree-compiler \
           python3-tk \
           gcc-multilib g++-multilib libsdl2-dev
       - name: Verify Versions
         run: |
           cmake --version
           python3 --version
+          dtc --version
       - name: Install West
         run: |
           pip3 install --user -U west
@@ -49,6 +50,8 @@ jobs:
           export PATH=$PATH:$ESPRESSIF_TOOLCHAIN_PATH/bin
           west update
           west espressif update
+          cd zephyr
+          west build -b esp32 samples/hello_world
       - name: MQTT Demos
         run: |
           cd ~/zephyrproject
