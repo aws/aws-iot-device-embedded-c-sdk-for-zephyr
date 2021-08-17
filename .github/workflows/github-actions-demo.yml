@@ -10,10 +10,10 @@ jobs:
           submodules: recursive
       - name: Install Dependencies
         run: |
-          sudo apt install --no-install-recommends git ninja-build gperf \
-          ccache dfu-util device-tree-compiler \
+          sudo apt install --no-install-recommends git cmake ninja-build gperf \
+          ccache dfu-util device-tree-compiler wget \
           python3-dev python3-pip python3-setuptools python3-tk python3-wheel xz-utils file \
-          gcc-multilib g++-multilib libsdl2-dev
+          make gcc gcc-multilib g++-multilib libsdl2-dev
       - name: Verify Versions
         run: |
           cmake --version
@@ -41,18 +41,6 @@ jobs:
           ./zephyr-sdk-0.12.4-x86_64-linux-setup.run -- -d ~/zephyr-sdk-0.12.4
           sudo cp ~/zephyr-sdk-0.12.4/sysroots/x86_64-pokysdk-linux/usr/share/openocd/contrib/60-openocd.rules /etc/udev/rules.d
           sudo udevadm control --reload
-      - name: Exploring file paths
-        run: |
-          cd ~
-          ls
-          cd ~/zephyrproject
-          ls
-          cd ~/work
-          ls
-          cd ~/work/aws-iot-device-embedded-c-sdk-for-zephyr
-          ls
-          cd ~/work/aws-iot-device-embedded-c-sdk-for-zephyr/aws-iot-device-embedded-c-sdk-for-zephyr
-          ls
       - name: Install Espressif and Build Hello World
         run: |
           cd ~/zephyrproject
@@ -64,4 +52,27 @@ jobs:
           west espressif update
           cd zephyr
           west build -b esp32 samples/hello_world
-          west build -b esp32 ~/work/aws-iot-device-embedded-c-sdk-for-zephyr/aws-iot-device-embedded-c-sdk-for-zephyr/demos/mqtt/mqtt_plaintext --pristine -- -DCMAKE_C_FLAGS=" -DBROKER_ENDPOINT=\\\"broker\\\" -DWIFI_NETWORK_SSID=\\\"wifi\\\" -DWIFI_NETWORK_PASSWORD=\\\"password\\\" "
+      - name: MQTT Demos
+        run: |
+          cd ~/zephyrproject
+          export ZEPHYR_TOOLCHAIN_VARIANT="espressif"
+          export ESPRESSIF_TOOLCHAIN_PATH="${HOME}/.espressif/tools/xtensa-esp32-elf/esp-2020r3-8.4.0/xtensa-esp32-elf"
+          export PATH=$PATH:$ESPRESSIF_TOOLCHAIN_PATH/bin
+          west build -b esp32 ~/work/aws-iot-device-embedded-c-sdk-for-zephyr/aws-iot-device-embedded-c-sdk-for-zephyr/demos/mqtt/mqtt_plaintext --pristine -- -DCMAKE_C_FLAGS=" -DBROKER_ENDPOINT=\\\"broker_endpoint\\\" -DWIFI_NETWORK_SSID=\\\"wifi\\\" -DWIFI_NETWORK_PASSWORD=\\\"password\\\" "
+          west build -b esp32 ~/work/aws-iot-device-embedded-c-sdk-for-zephyr/aws-iot-device-embedded-c-sdk-for-zephyr/demos/mqtt/mqtt_basic_tls --pristine -- -DCMAKE_C_FLAGS=" -DBROKER_ENDPOINT=\\\"broker_endpoint\\\" -DWIFI_NETWORK_SSID=\\\"wifi\\\" -DWIFI_NETWORK_PASSWORD=\\\"password\\\" "
+          west build -b esp32 ~/work/aws-iot-device-embedded-c-sdk-for-zephyr/aws-iot-device-embedded-c-sdk-for-zephyr/demos/mqtt/mqtt_mutual_auth --pristine -- -DCMAKE_C_FLAGS=" -DAWS_IOT_ENDPOINT=\\\"aws_iot_endpoint\\\" -DCLIENT_CERT_PEM=\\\"client_certificate\\\" -DCLIENT_PRIVATE_KEY_PEM=\\\"client_private_key\\\" -DWIFI_NETWORK_SSID=\\\"wifi\\\" -DWIFI_NETWORK_PASSWORD=\\\"password\\\" "
+      - name: HTTP Demos
+        run: |
+          cd ~/zephyrproject
+          export ZEPHYR_TOOLCHAIN_VARIANT="espressif"
+          export ESPRESSIF_TOOLCHAIN_PATH="${HOME}/.espressif/tools/xtensa-esp32-elf/esp-2020r3-8.4.0/xtensa-esp32-elf"
+          export PATH=$PATH:$ESPRESSIF_TOOLCHAIN_PATH/bin
+          west build -b esp32 ~/work/aws-iot-device-embedded-c-sdk-for-zephyr/aws-iot-device-embedded-c-sdk-for-zephyr/demos/http/http_plaintext --pristine -- -DCMAKE_C_FLAGS=" -DWIFI_NETWORK_SSID=\\\"wifi\\\" -DWIFI_NETWORK_PASSWORD=\\\"password\\\" "
+          west build -b esp32 ~/work/aws-iot-device-embedded-c-sdk-for-zephyr/aws-iot-device-embedded-c-sdk-for-zephyr/demos/http/http_mutual_auth --pristine -- -DCMAKE_C_FLAGS=" -DAWS_IOT_ENDPOINT=\\\"aws_iot_endpoint\\\" -DCLIENT_CERT_PEM=\\\"client_certificate\\\" -DCLIENT_PRIVATE_KEY_PEM=\\\"client_private_key\\\" -DWIFI_NETWORK_SSID=\\\"wifi\\\" -DWIFI_NETWORK_PASSWORD=\\\"password\\\" "
+      - name: Shadow Demos
+        run: |
+          cd ~/zephyrproject
+          export ZEPHYR_TOOLCHAIN_VARIANT="espressif"
+          export ESPRESSIF_TOOLCHAIN_PATH="${HOME}/.espressif/tools/xtensa-esp32-elf/esp-2020r3-8.4.0/xtensa-esp32-elf"
+          export PATH=$PATH:$ESPRESSIF_TOOLCHAIN_PATH/bin
+          west build -b esp32 ~/work/aws-iot-device-embedded-c-sdk-for-zephyr/aws-iot-device-embedded-c-sdk-for-zephyr/demos/shadow/shadow_main --pristine -- -DCMAKE_C_FLAGS=" -DAWS_IOT_ENDPOINT=\\\"aws_iot_endpoint\\\" -DCLIENT_CERT_PEM=\\\"client_certificate\\\" -DCLIENT_PRIVATE_KEY_PEM=\\\"client_private_key\\\" -DWIFI_NETWORK_SSID=\\\"wifi\\\" -DWIFI_NETWORK_PASSWORD=\\\"password\\\" "
