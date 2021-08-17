@@ -23,7 +23,7 @@ jobs:
       - name: Install West
         run: |
           pip3 install --user -U west
-          echo "$HOME/.local/bin" >> $PATH
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
       - name: Get Zephyr Source Code and Export Zephyr CMake
         run: |
           west init ~/zephyrproject
