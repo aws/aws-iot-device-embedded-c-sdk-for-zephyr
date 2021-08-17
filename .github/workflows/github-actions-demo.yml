@@ -38,6 +38,7 @@ jobs:
           wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.12.4/zephyr-sdk-0.12.4-x86_64-linux-setup.run
           chmod +x zephyr-sdk-0.12.4-x86_64-linux-setup.run
           ./zephyr-sdk-0.12.4-x86_64-linux-setup.run -- -d ~/zephyr-sdk-0.12.4
+          sudo cp ~/zephyr-sdk-0.12.4/sysroots/x86_64-pokysdk-linux/usr/share/openocd/contrib/60-openocd.rules /etc/udev/rules.d
           sudo udevadm control --reload
       - name: Install Espressif and Build Hello World
         run: |
