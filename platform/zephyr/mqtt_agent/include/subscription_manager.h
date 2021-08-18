@@ -1,5 +1,5 @@
 /*
- * FreeRTOS V202107.00
+ * AWS IoT Device Embedded C SDK for ZephyrRTOS
  * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -18,10 +18,6 @@
  * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- * https://www.FreeRTOS.org
- * https://aws.amazon.com/freertos
- *
  */
 
 /**
@@ -54,13 +50,8 @@
 
 #include "logging_stack.h"
 
-
-/* Demo config include. */
-#include "mqtt_agent_demo_config.h"
-
 /* core MQTT include. */
 #include "core_mqtt.h"
-
 
 /**
  * @brief Maximum number of subscriptions maintained by the subscription manager
@@ -73,11 +64,11 @@
 /**
  * @brief Callback function called when receiving a publish.
  *
- * @param[in] pvIncomingPublishCallbackContext The incoming publish callback context.
- * @param[in] pxPublishInfo Deserialized publish information.
+ * @param[in] pIncomingPublishCallbackContext The incoming publish callback context.
+ * @param[in] pPublishInfo Deserialized publish information.
  */
-typedef void (* IncomingPubCallback_t )( void * pvIncomingPublishCallbackContext,
-                                         MQTTPublishInfo_t * pxPublishInfo );
+typedef void (* IncomingPubCallback_t )( void * pIncomingPublishCallbackContext,
+                                         MQTTPublishInfo_t * pPublishInfo );
 
 /**
  * @brief An element in the list of subscriptions.
@@ -93,10 +84,10 @@ typedef void (* IncomingPubCallback_t )( void * pvIncomingPublishCallbackContext
  */
 typedef struct subscriptionElement
 {
-    IncomingPubCallback_t pxIncomingPublishCallback;
-    void * pvIncomingPublishCallbackContext;
-    uint16_t usFilterStringLength;
-    const char * pcSubscriptionFilterString;
+    IncomingPubCallback_t incomingPublishCallback;
+    void * pIncomingPublishCallbackContext;
+    uint16_t filterStringLength;
+    const char * pSubscriptionFilterString;
 } SubscriptionElement_t;
 
 /**
@@ -106,19 +97,19 @@ typedef struct subscriptionElement
  * context-callback pairs. However, a single context-callback pair may only be
  * associated to the same topic filter once.
  *
- * @param[in] pxSubscriptionList  The pointer to the subscription list array.
- * @param[in] pcTopicFilterString Topic filter string of subscription.
- * @param[in] usTopicFilterLength Length of topic filter string.
- * @param[in] pxIncomingPublishCallback Callback function for the subscription.
- * @param[in] pvIncomingPublishCallbackContext Context for the subscription callback.
+ * @param[in] pSubscriptionList  The pointer to the subscription list array.
+ * @param[in] pTopicFilterString Topic filter string of subscription.
+ * @param[in] topicFilterLength Length of topic filter string.
+ * @param[in] incomingPublishCallback Callback function for the subscription.
+ * @param[in] pIncomingPublishCallbackContext Context for the subscription callback.
  *
  * @return `true` if subscription added or exists, `false` if insufficient memory.
  */
-bool addSubscription( SubscriptionElement_t * pxSubscriptionList,
-                      const char * pcTopicFilterString,
-                      uint16_t usTopicFilterLength,
-                      IncomingPubCallback_t pxIncomingPublishCallback,
-                      void * pvIncomingPublishCallbackContext );
+bool addSubscription( SubscriptionElement_t * pSubscriptionList,
+                      const char * pTopicFilterString,
+                      uint16_t topicFilterLength,
+                      IncomingPubCallback_t incomingPublishCallback,
+                      void * pIncomingPublishCallbackContext );
 
 /**
  * @brief Remove a subscription from the subscription list.
@@ -126,25 +117,25 @@ bool addSubscription( SubscriptionElement_t * pxSubscriptionList,
  * @note If the topic filter exists multiple times in the subscription list,
  * then every instance of the subscription will be removed.
  *
- * @param[in] pxSubscriptionList  The pointer to the subscription list array.
- * @param[in] pcTopicFilterString Topic filter of subscription.
- * @param[in] usTopicFilterLength Length of topic filter.
+ * @param[in] pSubscriptionList  The pointer to the subscription list array.
+ * @param[in] pTopicFilterString Topic filter of subscription.
+ * @param[in] topicFilterLength Length of topic filter.
  */
-void removeSubscription( SubscriptionElement_t * pxSubscriptionList,
-                         const char * pcTopicFilterString,
-                         uint16_t usTopicFilterLength );
+void removeSubscription( SubscriptionElement_t * pSubscriptionList,
+                         const char * pTopicFilterString,
+                         uint16_t topicFilterLength );
 
 /**
  * @brief Handle incoming publishes by invoking the callbacks registered
  * for the incoming publish's topic filter.
  *
- * @param[in] pxSubscriptionList  The pointer to the subscription list array.
- * @param[in] pxPublishInfo Info of incoming publish.
+ * @param[in] pSubscriptionList  The pointer to the subscription list array.
+ * @param[in] pPublishInfo Info of incoming publish.
  *
  * @return `true` if an application callback could be invoked;
  *  `false` otherwise.
  */
-bool handleIncomingPublishes( SubscriptionElement_t * pxSubscriptionList,
-                              MQTTPublishInfo_t * pxPublishInfo );
+bool handleIncomingPublishes( SubscriptionElement_t * pSubscriptionList,
+                              MQTTPublishInfo_t * pPublishInfo );
 
 #endif /* SUBSCRIPTION_MANAGER_H */
