@@ -28,7 +28,7 @@
 /* Constants that select which demos to build into the project:
  * Set the following to 1 to include the demo in the build, or 0 to exclude the
  * demo. */
-#define NUM_SIMPLE_SUB_PUB_TASKS_TO_CREATE    2
+#define NUM_SIMPLE_SUB_PUB_TASKS_TO_CREATE    1
 #define SIMPLE_SUB_PUB_TASK_STACK_SIZE        ( MINIMAL_STACK_SIZE )
 
 /**
