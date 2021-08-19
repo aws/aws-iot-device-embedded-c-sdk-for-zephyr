@@ -195,14 +195,17 @@ static bool subscribeToTopic( MQTTQoS_t QoS,
                               char * pTopicFilter,
                               uint32_t taskNumber );
 
-static void simpleSubscribePublishTaskWrapper( void * a,
-                                               void * b,
-                                               void * c );
-
 /**
  * @brief The function that implements the task demonstrated by this file.
+ *
+ * @param[in] pParameters A pointer to a SimplePubSubDemoParams struct with
+ * parameters for this function.
+ * @param[in] b Unused parameter to fit Zephyr thread creation. Can just be NULL.
+ * @param[in] c Unused parameter to fit Zephyr thread creation. Can just be NULL.
  */
-static void simpleSubscribePublishTask( void * pParameters );
+static void simpleSubscribePublishTask( void * pParameters,
+                                        void * b,
+                                        void * c );
 
 /*-----------------------------------------------------------*/
 
@@ -268,7 +271,7 @@ void StartSimpleSubscribePublishTask( uint32_t numberToCreate,
         k_thread_create( &( simpleSubPubThreads[ taskNumber ] ),
                          pubSubStackArea[ taskNumber ],
                          stackSize,
-                         simpleSubscribePublishTaskWrapper,
+                         simpleSubscribePublishTask,
                          ( void * ) &pParams[ taskNumber ],
                          NULL,
                          NULL,
@@ -440,14 +443,9 @@ static bool subscribeToTopic( MQTTQoS_t QoS,
 
 /*-----------------------------------------------------------*/
 
-static void simpleSubscribePublishTaskWrapper( void * a,
-                                               void * b,
-                                               void * c )
-{
-    simpleSubscribePublishTask( a );
-}
-
-static void simpleSubscribePublishTask( void * pParameters )
+static void simpleSubscribePublishTask( void * pParameters,
+                                        void * b,
+                                        void * c )
 {
     MQTTPublishInfo_t publishInfo = { 0 };
     char payloadBuf[ STRING_BUFFER_LENGTH ];
