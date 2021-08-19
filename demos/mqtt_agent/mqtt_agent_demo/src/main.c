@@ -750,7 +750,7 @@ static bool socketConnect( NetworkContext_t * pNetworkContext )
 
     networkStatus = MBedTLS_Connect( pNetworkContext, &serverInfo, &networkCredentials, TRANSPORT_SEND_RECV_TIMEOUT_MS, TRANSPORT_SEND_RECV_TIMEOUT_MS );
 
-    connected = networkStatus == TLS_TRANSPORT_SUCCESS;
+    connected = ( networkStatus == TLS_TRANSPORT_SUCCESS );
 
     /* Set the socket wakeup callback and ensure the read block time. */
     if( connected )

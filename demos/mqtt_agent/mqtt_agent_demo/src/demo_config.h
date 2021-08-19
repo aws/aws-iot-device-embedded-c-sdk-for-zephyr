@@ -188,7 +188,7 @@
  * @brief The name of the MQTT library used and its version, following an "@"
  * symbol.
  */
-#define MQTT_LIB                    "core-mqtt@1.0.0"
+#define MQTT_LIB                    "core-mqtt@" MQTT_LIBRARY_VERSION
 
 /**
  * @brief Set the stack size of the main demo task.
