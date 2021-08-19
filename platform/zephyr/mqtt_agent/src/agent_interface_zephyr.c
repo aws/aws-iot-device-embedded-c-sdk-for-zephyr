@@ -36,7 +36,7 @@ bool Agent_MessageSend( MQTTAgentMessageContext_t * pMsgCtx,
 
     if( ( pMsgCtx != NULL ) && ( pCommandToSend != NULL ) )
     {
-        ret = k_msgq_put( &( pMsgCtx->queue ), pCommandToSend, K_MSEC( blockTimeMs ) ) == 0;
+        ret = ( k_msgq_put( &( pMsgCtx->queue ), pCommandToSend, K_MSEC( blockTimeMs ) ) == 0 );
     }
 
     return ret;
@@ -51,7 +51,7 @@ bool Agent_MessageReceive( MQTTAgentMessageContext_t * pMsgCtx,
 
     if( ( pMsgCtx != NULL ) && ( pReceivedCommand != NULL ) )
     {
-        ret = k_msgq_get( &( pMsgCtx->queue ), pReceivedCommand, K_MSEC( blockTimeMs ) ) == 0;
+        ret = ( k_msgq_get( &( pMsgCtx->queue ), pReceivedCommand, K_MSEC( blockTimeMs ) ) == 0 );
     }
 
     return ret;
