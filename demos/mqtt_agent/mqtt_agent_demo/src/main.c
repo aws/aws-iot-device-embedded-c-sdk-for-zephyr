@@ -306,20 +306,6 @@ static void subscriptionCommandCallback( MQTTAgentCommandContext_t * pCommandCon
                                          MQTTAgentReturnInfo_t * pReturnInfo );
 
 /**
- * @brief Wrapper function for the mqttAgentTask function.
- *
- * This is necessary to fit the right types for Zephyr's k_thread_create, which requires a void function with three (void *) parameters.
- *
- * @param[in] pParameters Parameters as passed at the time of task creation. Not
- * used in this example. This is passed to mqttAgentTask.
- * @param[in] b Unused parameter. Can just be NULL.
- * @param[in] c Unused parameter. Can just be NULL.
- */
-static void mqttAgentTaskWrapper( void * pParameters,
-                                  void * b,
-                                  void * c );
-
-/**
  * @brief Task used to run the MQTT agent.  In this example the first task that
  * is created is responsible for creating all the other demo tasks.  Then,
  * rather than create mqttAgentTask() as a separate task, it simply calls
@@ -331,8 +317,12 @@ static void mqttAgentTaskWrapper( void * pParameters,
  *
  * @param[in] pParameters Parameters as passed at the time of task creation. Not
  * used in this example.
+ * @param[in] b Unused parameter to fit Zephyr thread creation. Can just be NULL.
+ * @param[in] c Unused parameter to fit Zephyr thread creation. Can just be NULL.
  */
-static void mqttAgentTask( void * pParameters );
+static void mqttAgentTask( void * pParameters,
+                           void * b,
+                           void * c );
 
 /**
  * @brief The main task used in the MQTT demo.
@@ -817,13 +807,6 @@ static void incomingPublishCallback( MQTTAgentContext_t * pMqttAgentContext,
 
 /*-----------------------------------------------------------*/
 
-static void mqttAgentTaskWrapper( void * a,
-                                  void * b,
-                                  void * c )
-{
-    mqttAgentTask( NULL );
-}
-
 static void mqttAgentTask( void * pParameters )
 {
     bool networkResult = false;
@@ -973,7 +956,7 @@ static int connectAndCreateDemoTasks( void * pParameters )
         k_thread_create( &mqttAgentThread,
                          mqttAgentStackArea,
                          SIMPLE_SUB_PUB_TASK_STACK_SIZE,
-                         mqttAgentTaskWrapper,
+                         mqttAgentTask,
                          NULL,
                          NULL,
                          NULL,
