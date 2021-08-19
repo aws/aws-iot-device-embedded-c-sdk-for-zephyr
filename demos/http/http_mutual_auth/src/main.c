@@ -226,7 +226,7 @@ static int32_t connectToServer( NetworkContext_t * pNetworkContext )
                ( int32_t ) AWS_IOT_ENDPOINT_LENGTH,
                AWS_IOT_ENDPOINT,
                AWS_HTTPS_PORT ) );
-    tlsTranportStatus = MBedTLS_Connect( pNetworkContext,
+    tlsTranportStatus = MbedTLS_Connect( pNetworkContext,
                                          &serverInfo,
                                          &networkCredentials,
                                          TRANSPORT_SEND_RECV_TIMEOUT_MS,
@@ -398,8 +398,8 @@ static int start_mutual_auth_demo()
     if( returnStatus == EXIT_SUCCESS )
     {
         ( void ) memset( &transportInterface, 0, sizeof( transportInterface ) );
-        transportInterface.recv = MBedTLS_recv;
-        transportInterface.send = MBedTLS_send;
+        transportInterface.recv = MbedTLS_recv;
+        transportInterface.send = MbedTLS_send;
         transportInterface.pNetworkContext = &networkContext;
     }
 
@@ -423,7 +423,7 @@ static int start_mutual_auth_demo()
     /************************** Disconnect. *****************************/
 
     /* End TLS session, then close TCP connection. */
-    ( void ) MBedTLS_Disconnect( &networkContext );
+    ( void ) MbedTLS_Disconnect( &networkContext );
 
     return returnStatus;
 }

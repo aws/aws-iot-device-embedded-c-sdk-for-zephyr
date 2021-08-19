@@ -649,7 +649,7 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
                    AWS_IOT_ENDPOINT,
                    AWS_MQTT_PORT ) );
 
-        tlsTransportStatus = MBedTLS_Connect( pNetworkContext,
+        tlsTransportStatus = MbedTLS_Connect( pNetworkContext,
                                               &serverInfo,
                                               &networkCredentials,
                                               TRANSPORT_SEND_RECV_TIMEOUT_MS,
@@ -668,7 +668,7 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
             if( returnStatus == EXIT_FAILURE )
             {
                 /* End TLS session, then close TCP connection. */
-                ( void ) MBedTLS_Disconnect( pNetworkContext );
+                ( void ) MbedTLS_Disconnect( pNetworkContext );
             }
         }
 
@@ -1319,8 +1319,8 @@ static int initializeMqtt( MQTTContext_t * pMqttContext,
      * For this demo, TCP sockets are used to send and receive data
      * from network. Network context is SSL context for OpenSSL.*/
     transport.pNetworkContext = pNetworkContext;
-    transport.send = MBedTLS_send;
-    transport.recv = MBedTLS_recv;
+    transport.send = MbedTLS_send;
+    transport.recv = MbedTLS_recv;
 
     /* Fill the values for network buffer. */
     networkBuffer.pBuffer = buffer;
@@ -1556,7 +1556,7 @@ static int start_mutual_auth_demo()
             }
 
             /* End TLS session, then close TCP connection. */
-            ( void ) MBedTLS_Disconnect( &networkContext );
+            ( void ) MbedTLS_Disconnect( &networkContext );
 
             LogInfo( ( "Short delay before starting the next iteration....\n" ) );
             k_sleep( K_SECONDS( MQTT_SUBPUB_LOOP_DELAY_SECONDS ) );

@@ -239,12 +239,12 @@ static uint8_t buffer[ NETWORK_BUFFER_SIZE ];
 static MQTTContext_t mqttContext = { 0 };
 
 /**
- * @brief The network context used for MBedTLS operation.
+ * @brief The network context used for MbedTLS operation.
  */
 static NetworkContext_t networkContext = { 0 };
 
 /**
- * @brief The parameters for MBedTLS operation.
+ * @brief The parameters for MbedTLS operation.
  */
 static TlsTransportParams_t tlsTransportParams = { 0 };
 
@@ -386,7 +386,7 @@ static int connectToServerWithBackoffRetries( NetworkContext_t * pNetworkContext
                    AWS_IOT_ENDPOINT_LENGTH,
                    AWS_IOT_ENDPOINT,
                    AWS_MQTT_PORT ) );
-        tlsTransportStatus = MBedTLS_Connect( pNetworkContext,
+        tlsTransportStatus = MbedTLS_Connect( pNetworkContext,
                                               &serverInfo,
                                               &networkCredentials,
                                               TRANSPORT_SEND_RECV_TIMEOUT_MS,
@@ -608,10 +608,10 @@ int EstablishMqttSession( MQTTEventCallback_t eventCallback )
     {
         /* Fill in TransportInterface send and receive function pointers.
          * For this demo, TCP sockets are used to send and receive data
-         * from network. Network context is SSL context for MBedTLS.*/
+         * from network. Network context is SSL context for MbedTLS.*/
         transport.pNetworkContext = pNetworkContext;
-        transport.send = MBedTLS_send;
-        transport.recv = MBedTLS_recv;
+        transport.send = MbedTLS_send;
+        transport.recv = MbedTLS_recv;
 
         /* Fill the values for network buffer. */
         networkBuffer.pBuffer = buffer;
@@ -739,7 +739,7 @@ int32_t DisconnectMqttSession( void )
     }
 
     /* End TLS session, then close TCP connection. */
-    ( void ) MBedTLS_Disconnect( pNetworkContext );
+    ( void ) MbedTLS_Disconnect( pNetworkContext );
 
     return returnStatus;
 }
