@@ -807,13 +807,17 @@ static void incomingPublishCallback( MQTTAgentContext_t * pMqttAgentContext,
 
 /*-----------------------------------------------------------*/
 
-static void mqttAgentTask( void * pParameters )
+static void mqttAgentTask( void * pParameters,
+                           void * b,
+                           void * c )
 {
     bool networkResult = false;
     MQTTStatus_t mqttStatus = MQTTSuccess, xConnectStatus = MQTTSuccess;
     MQTTContext_t * pMqttContext = &( globalMqttAgentContext.mqttContext );
 
     ( void ) pParameters;
+    ( void ) b;
+    ( void ) c;
 
     do
     {
