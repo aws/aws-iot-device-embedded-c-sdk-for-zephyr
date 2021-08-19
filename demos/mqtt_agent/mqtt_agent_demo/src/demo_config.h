@@ -193,8 +193,6 @@
 /**
  * @brief Set the stack size of the main demo task.
  *
- * In the Windows port, this stack only holds a structure. The actual
- * stack is created by an operating system thread.
  */
 #define DEMO_STACKSIZE              MINIMAL_STACK_SIZE
 
