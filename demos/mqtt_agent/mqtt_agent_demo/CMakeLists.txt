@@ -1,47 +1,58 @@
-# FreeRTOS coreMQTT demos
-afr_demo_module(core_mqtt_agent)
+# SPDX-License-Identifier: Apache-2.0
 
-# Set the default demo that is enabled in the downloaded package.
-afr_set_demo_metadata(ID "CORE_MQTT_AGENT_DEMO")
-afr_set_demo_metadata(DESCRIPTION "Examples that demonstrate the MQTT Agent library")
-afr_set_demo_metadata(DISPLAY_NAME "coreMQTT Agent Demos")
+cmake_minimum_required(VERSION 3.13.1)
 
-# Add the CMakeLists.txt file of module to metadata list.
-afr_module_cmake_files(${AFR_CURRENT_MODULE} 
-    ${CMAKE_CURRENT_LIST_DIR}/CMakeLists.txt
+find_package(Zephyr HINTS $ENV{ZEPHYR_BASE})
+project(mqtt_mutual_auth)
+
+FILE(GLOB app_sources src/*.c)
+target_sources(app PRIVATE ${app_sources})
+
+#for getting filepaths relative to the demo, but it's better to do it relative to the zephyr base
+get_filename_component(CSDK_BASE "${CMAKE_SOURCE_DIR}/../../.." ABSOLUTE)
+
+# Include MQTT library's source and header path variables.
+include( ${CSDK_BASE}/libraries/standard/coreMQTT/mqttFilePaths.cmake )
+
+include( ${CSDK_BASE}/libraries/standard/coreMQTT-Agent/mqttAgentFilePaths.cmake)
+
+# Include backoffAlgorithm library file path configuration.
+include( ${CSDK_BASE}/libraries/standard/backoffAlgorithm/backoffAlgorithmFilePaths.cmake )
+
+# Include logging sources.
+include( ${CSDK_BASE}/demos/logging-stack/logging.cmake )
+
+#Include transport library implementations for Zephyr.
+include( ${CSDK_BASE}/platform/zephyr/zephyrFilePaths.cmake )
+
+#Include wifi connection function for ESP.
+include( ${CSDK_BASE}/platform/espressif/espressifFilePaths.cmake)
+
+# Include clock.
+include( ${CSDK_BASE}/platform/zephyr/clock/clockFilePaths.cmake)
+
+target_sources(app
+    PRIVATE 
+        ${MQTT_SOURCES}
+        ${MQTT_AGENT_SOURCES}
+        ${MQTT_SERIALIZER_SOURCES}
+        ${BACKOFF_ALGORITHM_SOURCES}
+        ${CLOCK_SOURCES}
+        ${SOCKETS_SOURCES}
+        ${MBEDTLS_SOURCES}
+        ${WIFI_SOURCES}
+        ${MQTT_AGENT_ZEPHYR_SOURCES}
 )
 
-afr_module_sources(
-    ${AFR_CURRENT_MODULE}
-    INTERFACE
-        "${CMAKE_CURRENT_LIST_DIR}/mqtt_agent_task.c"
-        "${CMAKE_CURRENT_LIST_DIR}/simple_sub_pub_demo.c"
-        "${CMAKE_CURRENT_LIST_DIR}/subscription_manager.c"
-        "${CMAKE_CURRENT_LIST_DIR}/subscription_manager.h"
-        # Add the header file added to the target's metadata so that it
-        # is available in code downloaded from the FreeRTOS console.
-        ${AFR_DEMOS_DIR}/include/aws_iot_metrics.h
-)
-
-afr_module_include_dirs(
-    ${AFR_CURRENT_MODULE}
-    INTERFACE
-       "${AFR_DEMOS_DIR}/include"
-       ${CMAKE_CURRENT_LIST_DIR}
-)
-
-afr_module_dependencies(
-    ${AFR_CURRENT_MODULE}
-    INTERFACE
-        AFR::core_mqtt
-        AFR::core_mqtt_agent
-        AFR::mqtt_agent_interface
-        AFR::backoff_algorithm
-        AFR::transport_interface_secure_sockets
-        AFR::secure_sockets
-        AFR::pkcs11_helpers
-        # Add dependency on the core_mqtt_agent_demo_dependencies metadata module
-        # so that FreeRTOS console shows this demo ONLY when the core MQTT Agent
-        # (or another library depending on coreMQTT Agent) is selected on the console.
-        AFR::core_mqtt_agent_demo_dependencies
+target_include_directories(app
+    PUBLIC
+        ${MQTT_INCLUDE_PUBLIC_DIRS}
+        ${MQTT_AGENT_INCLUDE_PUBLIC_DIRS}
+        ${BACKOFF_ALGORITHM_INCLUDE_PUBLIC_DIRS}
+        ${CMAKE_CURRENT_LIST_DIR}
+        ${LOGGING_INCLUDE_DIRS}
+        ${CLOCK_INCLUDE_DIRS}
+        ${COMMON_TRANSPORT_INCLUDE_PUBLIC_DIRS}
+        ${WIFI_INCLUDE_DIRS}
+        ${MQTT_AGENT_ZEPHYR_INCLUDE_PUBLIC_DIRS}
 )
