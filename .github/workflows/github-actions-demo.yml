@@ -46,6 +46,7 @@ jobs:
           west update
           west espressif update
       - name: Build Hello World
+        run: |
           cd ~/zephyrproject/zephyr
           west build -b esp32 samples/hello_world
       - name: MQTT Demos
