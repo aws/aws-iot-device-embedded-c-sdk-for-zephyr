@@ -29,13 +29,6 @@ jobs:
           west zephyr-export
       - name: Install requirements.txt
         run: pip3 install --user -r ~/zephyrproject/zephyr/scripts/requirements.txt
-      - name: Install Zephyr SDK
-        run: |
-          cd ~
-          ls
-          wget https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v0.12.4/zephyr-sdk-0.12.4-x86_64-linux-setup.run
-          chmod +x zephyr-sdk-0.12.4-x86_64-linux-setup.run
-          ./zephyr-sdk-0.12.4-x86_64-linux-setup.run -- -d ~/zephyr-sdk-0.12.4
       - name: Install Espressif
         run: |
           cd ~/zephyrproject
