@@ -35,6 +35,14 @@ jobs:
           west espressif install
           west update
           west espressif update
+      - name: Setting github path
+        run: |
+          echo "$ESPRESSIF_TOOLCHAIN_PATH/bin" >> $GITHUB_PATH
+      - name: View Github Path
+        run: |
+          export ZEPHYR_TOOLCHAIN_VARIANT="espressif"
+          export ESPRESSIF_TOOLCHAIN_PATH="${HOME}/.espressif/tools/xtensa-esp32-elf/esp-2020r3-8.4.0/xtensa-esp32-elf"
+          echo "$PATH"
       - name: Build Hello World
         run: |
           cd ~/zephyrproject/zephyr
