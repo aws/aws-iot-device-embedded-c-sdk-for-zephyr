@@ -251,7 +251,7 @@ env:Path += "$env:ESPRESSIF_TOOLCHAIN_PATH\bin"
   
 3. Run `west build -b esp32 file_path_to_demo` to build a demo, replacing `file_path_to_demo` with the path to the desired demo. (Note: if another demo had been previously built in the west workspace, the additional option `--pristine` may need to be added to the end of the command.
 
-4. Run `west flash` to flash the demo. For documentation on additional options when flashing, please refer to https://docs.zephyrproject.org/latest/boards/xtensa/esp32/doc/index.html#flashing.
+4. Run `west flash` to flash the demo. The option `--esp-device *ESP_DEVICE*`, where `*ESP_DEVICE*` is the serial port to flash, may also be useful to flash for ESP boards not connected to the default port. For documentation on additional options when flashing, please refer to https://docs.zephyrproject.org/latest/boards/xtensa/esp32/doc/index.html#flashing.
 
 ## Adding C-SDK to a Zephyr Application
 
