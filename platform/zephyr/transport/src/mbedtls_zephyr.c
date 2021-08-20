@@ -790,7 +790,7 @@ TlsTransportStatus_t MbedTLS_Connect( NetworkContext_t * pNetworkContext,
 }
 /*-----------------------------------------------------------*/
 
-void MbedTLS_Disconnect( NetworkContext_t * pNetworkContext )
+SocketStatus_t MbedTLS_Disconnect( NetworkContext_t * pNetworkContext )
 {
     TlsTransportParams_t * pTlsTransportParams = NULL;
     SocketStatus_t tlsStatus = 0;
@@ -828,11 +828,13 @@ void MbedTLS_Disconnect( NetworkContext_t * pNetworkContext )
         }
 
         /* Call socket shutdown function to close connection. */
-        Sockets_Disconnect( pTlsTransportParams->tcpSocket );
+        tlsStatus = Sockets_Disconnect( pTlsTransportParams->tcpSocket );
 
         /* Free mbed TLS contexts. */
         sslContextFree( &( pTlsTransportParams->sslContext ) );
     }
+
+    return tlsStatus;
 }
 /*-----------------------------------------------------------*/
 

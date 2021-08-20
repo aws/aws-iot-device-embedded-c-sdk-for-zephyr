@@ -158,7 +158,7 @@ TlsTransportStatus_t MbedTLS_Connect( NetworkContext_t * pNetworkContext,
  *
  * @param[in] pNetworkContext Network context.
  */
-void MbedTLS_Disconnect( NetworkContext_t * pNetworkContext );
+SocketStatus_t MbedTLS_Disconnect( NetworkContext_t * pNetworkContext );
 
 /**
  * @brief Receives data from an established TLS connection.
