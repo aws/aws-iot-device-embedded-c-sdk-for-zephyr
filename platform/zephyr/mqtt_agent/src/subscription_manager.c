@@ -156,7 +156,7 @@ bool handleIncomingPublishes( SubscriptionElement_t * pSubscriptionList,
                 if( isMatched == true )
                 {
                     pSubscriptionList[ index ].incomingPublishCallback( pSubscriptionList[ index ].pIncomingPublishCallbackContext,
-                                                                            pPublishInfo );
+                                                                        pPublishInfo );
                     publishHandled = true;
                 }
             }

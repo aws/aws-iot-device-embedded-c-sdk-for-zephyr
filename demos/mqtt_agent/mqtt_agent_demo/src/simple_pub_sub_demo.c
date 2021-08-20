@@ -218,7 +218,8 @@ extern MQTTAgentContext_t globalMqttAgentContext;
 /*-----------------------------------------------------------*/
 
 /**
- * @brief k_thread array to hold thread information for each simple sub pub thread.
+ * @brief Array of thread handles for representing all the threads created for
+ * Publish-Subscribe operations in the demo.
  */
 struct k_thread simpleSubPubThreads[ NUM_SIMPLE_SUB_PUB_TASKS_TO_CREATE ];
 

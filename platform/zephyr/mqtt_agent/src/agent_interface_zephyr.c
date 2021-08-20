@@ -33,8 +33,8 @@
 /**
  * @brief The number of structures to allocate in the command pool.
  */
-#ifndef MQTT_COMMAND_CONTEXTS_POOL_SIZE
-    #define MQTT_COMMAND_CONTEXTS_POOL_SIZE    ( 10U )
+#ifndef NUM_COMMANDS_IN_POOL
+    #define NUM_COMMANDS_IN_POOL    ( 10U )
 #endif
 
 /*-----------------------------------------------------------*/
@@ -44,12 +44,14 @@
  * as PUBLISH or SUBSCRIBE) between the command being created by an API call and
  * completion of the command by the execution of the command's callback.
  */
-static MQTTAgentCommand_t commandStructurePool[ MQTT_COMMAND_CONTEXTS_POOL_SIZE ];
+static MQTTAgentCommand_t commandStructurePool[ NUM_COMMANDS_IN_POOL ];
 
 /**
  * @brief Statically create a message queue to handle the command structures.
+ * The message queue is used for managing the memory blocks of command objects in the
+ * command pool in a thread-safe manner.
  */
-K_MSGQ_DEFINE(commandStructureQueue, sizeof(MQTTAgentCommand_t *), MQTT_COMMAND_CONTEXTS_POOL_SIZE, sizeof(MQTTAgentCommand_t *));
+K_MSGQ_DEFINE( commandStructureQueue, sizeof( MQTTAgentCommand_t * ), NUM_COMMANDS_IN_POOL, sizeof( MQTTAgentCommand_t * ) );
 
 /**
  * @brief Initialization status of the queue.
@@ -97,14 +99,13 @@ void Agent_InitializePool( void )
     if( !queueInit )
     {
         /* Populate the queue. */
-        for( i = 0; i < MQTT_COMMAND_CONTEXTS_POOL_SIZE; i++ )
+        for( i = 0; i < NUM_COMMANDS_IN_POOL; i++ )
         {
             /* Store the address as a variable. */
             pCommand = &commandStructurePool[ i ];
             /* Send the pointer to the queue. */
             commandAdded = ( k_msgq_put( &commandStructureQueue, &pCommand, K_NO_WAIT ) == 0 );
             assert( commandAdded );
-            commandAdded = false;
         }
 
         queueInit = true;
@@ -115,16 +116,17 @@ void Agent_InitializePool( void )
 MQTTAgentCommand_t * Agent_GetCommand( uint32_t blockTimeMs )
 {
     MQTTAgentCommand_t * structToUse = NULL;
-    bool structRetrieved = false;
+    bool commandRetrieved = false;
 
     /* Check queue has been created. */
     assert( queueInit );
 
-    structRetrieved = ( k_msgq_get( &commandStructureQueue, &structToUse, K_MSEC(blockTimeMs)) == 0 );
+    commandRetrieved = ( k_msgq_get( &commandStructureQueue, &structToUse, K_MSEC( blockTimeMs ) ) == 0 );
 
-    if( !structRetrieved )
+    if( !commandRetrieved )
     {
-        LogError( ( "No command structure available." ) );
+        LogError( ( "No command structure available. Maximum number of commands statically allocated in the pool is: %d",
+                    NUM_COMMANDS_IN_POOL ) );
     }
 
     return structToUse;
@@ -140,9 +142,9 @@ bool Agent_FreeCommand( MQTTAgentCommand_t * pCommandToRelease )
 
     /* See if the structure being returned is actually from the pool. */
     if( ( pCommandToRelease >= commandStructurePool ) &&
-        ( pCommandToRelease < ( commandStructurePool + MQTT_COMMAND_CONTEXTS_POOL_SIZE ) ) )
+        ( pCommandToRelease < ( commandStructurePool + NUM_COMMANDS_IN_POOL ) ) )
     {
-        structReturned = ( k_msgq_put( &commandStructureQueue, &pCommandToRelease, K_NO_WAIT) == 0);
+        structReturned = ( k_msgq_put( &commandStructureQueue, &pCommandToRelease, K_NO_WAIT ) == 0 );
 
         assert( structReturned );
     }

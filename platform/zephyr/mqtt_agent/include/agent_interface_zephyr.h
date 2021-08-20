@@ -68,7 +68,7 @@ bool Agent_MessageReceive( MQTTAgentMessageContext_t * pMsgCtx,
                            uint32_t blockTimeMs );
 
 /**
- * @brief Initialize the common task pool. Not thread safe.
+ * @brief Initialize the common task pool. Not thread safe, but only called on one thread.
  */
 void Agent_InitializePool( void );
 
