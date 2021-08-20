@@ -65,3 +65,9 @@ jobs:
           export ZEPHYR_TOOLCHAIN_VARIANT="espressif"
           export ESPRESSIF_TOOLCHAIN_PATH="${HOME}/.espressif/tools/xtensa-esp32-elf/esp-2020r3-8.4.0/xtensa-esp32-elf"
           west build -b esp32 ~/work/aws-iot-device-embedded-c-sdk-for-zephyr/aws-iot-device-embedded-c-sdk-for-zephyr/demos/shadow/shadow_main --pristine -- -DCMAKE_C_FLAGS=" -DAWS_IOT_ENDPOINT=\\\"aws_iot_endpoint\\\" -DCLIENT_CERT_PEM=\\\"client_certificate\\\" -DCLIENT_PRIVATE_KEY_PEM=\\\"client_private_key\\\" -DWIFI_NETWORK_SSID=\\\"wifi\\\" -DWIFI_NETWORK_PASSWORD=\\\"password\\\" "
+      - name: MQTT Agent Demos
+        run: |
+          cd ~/zephyrproject
+          export ZEPHYR_TOOLCHAIN_VARIANT="espressif"
+          export ESPRESSIF_TOOLCHAIN_PATH="${HOME}/.espressif/tools/xtensa-esp32-elf/esp-2020r3-8.4.0/xtensa-esp32-elf"
+          west build -b esp32 ~/work/aws-iot-device-embedded-c-sdk-for-zephyr/aws-iot-device-embedded-c-sdk-for-zephyr/demos/mqtt_agent/mqtt_agent_demo --pristine -- -DCMAKE_C_FLAGS=" -DMQTT_BROKER_ENDPOINT=\\\"aws_iot_endpoint\\\" -DWIFI_NETWORK_SSID=\\\"wifi\\\" -DWIFI_NETWORK_PASSWORD=\\\"password\\\" "
