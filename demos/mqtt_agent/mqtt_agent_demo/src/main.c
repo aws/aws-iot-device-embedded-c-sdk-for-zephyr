@@ -494,10 +494,12 @@ static MQTTStatus_t mqttAgentInit( void )
     k_msgq_init( &( commandQueue.queue ), commandQueueBuffer, sizeof( MQTTAgentCommand_t * ), MQTT_AGENT_COMMAND_QUEUE_LENGTH );
     messageInterface.pMsgCtx = &commandQueue;
 
+    Agent_InitializePool();
+
     /* Fill in Transport Interface send and receive function pointers. */
     transport.pNetworkContext = &networkContext;
-    transport.send = MBedTLS_send;
-    transport.recv = MBedTLS_recv;
+    transport.send = MbedTLS_send;
+    transport.recv = MbedTLS_recv;
 
     /* Initialize MQTT library. */
     mqttStatus = MQTTAgent_Init( &globalMqttAgentContext,
@@ -748,7 +750,7 @@ static bool socketConnect( NetworkContext_t * pNetworkContext )
                MQTT_BROKER_ENDPOINT,
                MQTT_BROKER_PORT ) );
 
-    networkStatus = MBedTLS_Connect( pNetworkContext, &serverInfo, &networkCredentials, TRANSPORT_SEND_RECV_TIMEOUT_MS, TRANSPORT_SEND_RECV_TIMEOUT_MS );
+    networkStatus = MbedTLS_Connect( pNetworkContext, &serverInfo, &networkCredentials, TRANSPORT_SEND_RECV_TIMEOUT_MS, TRANSPORT_SEND_RECV_TIMEOUT_MS );
 
     connected = ( networkStatus == TLS_TRANSPORT_SUCCESS );
 
@@ -770,7 +772,7 @@ static bool socketConnect( NetworkContext_t * pNetworkContext )
 static bool socketDisconnect( NetworkContext_t * pNetworkContext )
 {
     LogInfo( ( "Disconnecting TLS connection.\n" ) );
-    MBedTLS_Disconnect( pNetworkContext );
+    MbedTLS_Disconnect( pNetworkContext );
 
     return true;
 }

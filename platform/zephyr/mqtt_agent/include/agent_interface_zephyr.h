@@ -68,6 +68,11 @@ bool Agent_MessageReceive( MQTTAgentMessageContext_t * pMsgCtx,
                            uint32_t blockTimeMs );
 
 /**
+ * @brief Initialize the common task pool. Not thread safe.
+ */
+void Agent_InitializePool( void );
+
+/**
  * @brief Obtain a MQTTAgentCommand_t structure.
  *
  * @note MQTTAgentCommand_t structures hold everything the MQTT agent needs to process a
