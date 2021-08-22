@@ -310,7 +310,7 @@ SocketStatus_t Sockets_Disconnect( int32_t tcpSocket )
 {
     SocketStatus_t returnStatus = SOCKETS_SUCCESS;
 
-    if( tcpSocket > 0 )
+    if( tcpSocket >= 0 )
     {
         ( void ) zsock_shutdown( tcpSocket, ZSOCK_SHUT_RDWR );
         ( void ) zsock_close( tcpSocket );

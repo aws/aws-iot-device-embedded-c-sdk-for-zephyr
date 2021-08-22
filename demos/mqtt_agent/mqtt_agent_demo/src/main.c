@@ -414,11 +414,6 @@ static struct MQTTAgentDemoParams taskParameters[ NUM_SIMPLE_SUB_PUB_TASKS_TO_CR
 SubscriptionElement_t globalSubscriptionList[ SUBSCRIPTION_MANAGER_MAX_SUBSCRIPTIONS ];
 
 /**
- * @brief Semaphore to block until all tasks are finished.
- */
-struct k_sem taskFinishedSem;
-
-/**
  * @brief k_thread struct to hold MQTT Agent thread information.
  */
 static struct k_thread mqttAgentThread;
@@ -427,6 +422,8 @@ static struct k_thread mqttAgentThread;
  * @brief The command queue is a Zephyr message queue, which needs a buffer to store its members.
  */
 char __aligned( 8 ) commandQueueBuffer[ MQTT_AGENT_COMMAND_QUEUE_LENGTH * sizeof( MQTTAgentCommand_t * ) ];
+
+extern struct k_thread simpleSubPubThreads[ NUM_SIMPLE_SUB_PUB_TASKS_TO_CREATE ];
 
 /*-----------------------------------------------------------*/
 
@@ -494,10 +491,12 @@ static MQTTStatus_t mqttAgentInit( void )
     k_msgq_init( &( commandQueue.queue ), commandQueueBuffer, sizeof( MQTTAgentCommand_t * ), MQTT_AGENT_COMMAND_QUEUE_LENGTH );
     messageInterface.pMsgCtx = &commandQueue;
 
+    Agent_InitializePool();
+
     /* Fill in Transport Interface send and receive function pointers. */
     transport.pNetworkContext = &networkContext;
-    transport.send = MBedTLS_send;
-    transport.recv = MBedTLS_recv;
+    transport.send = MbedTLS_send;
+    transport.recv = MbedTLS_recv;
 
     /* Initialize MQTT library. */
     mqttStatus = MQTTAgent_Init( &globalMqttAgentContext,
@@ -748,7 +747,7 @@ static bool socketConnect( NetworkContext_t * pNetworkContext )
                MQTT_BROKER_ENDPOINT,
                MQTT_BROKER_PORT ) );
 
-    networkStatus = MBedTLS_Connect( pNetworkContext, &serverInfo, &networkCredentials, TRANSPORT_SEND_RECV_TIMEOUT_MS, TRANSPORT_SEND_RECV_TIMEOUT_MS );
+    networkStatus = MbedTLS_Connect( pNetworkContext, &serverInfo, &networkCredentials, TRANSPORT_SEND_RECV_TIMEOUT_MS, TRANSPORT_SEND_RECV_TIMEOUT_MS );
 
     connected = ( networkStatus == TLS_TRANSPORT_SUCCESS );
 
@@ -770,7 +769,7 @@ static bool socketConnect( NetworkContext_t * pNetworkContext )
 static bool socketDisconnect( NetworkContext_t * pNetworkContext )
 {
     LogInfo( ( "Disconnecting TLS connection.\n" ) );
-    MBedTLS_Disconnect( pNetworkContext );
+    MbedTLS_Disconnect( pNetworkContext );
 
     return true;
 }
@@ -947,7 +946,6 @@ static int connectAndCreateDemoTasks( void * pParameters )
 
     if( result )
     {
-        k_sem_init( &taskFinishedSem, 0, NUM_SIMPLE_SUB_PUB_TASKS_TO_CREATE );
         /* Create demo tasks as per the configuration macro settings. */
         StartSimpleSubscribePublishTask( NUM_SIMPLE_SUB_PUB_TASKS_TO_CREATE,
                                          SIMPLE_SUB_PUB_TASK_STACK_SIZE,
@@ -971,7 +969,7 @@ static int connectAndCreateDemoTasks( void * pParameters )
         /* Wait for all tasks to exit. */
         for( i = 0; i < NUM_SIMPLE_SUB_PUB_TASKS_TO_CREATE; i++ )
         {
-            k_sem_take( &taskFinishedSem, K_FOREVER );
+            k_thread_join( &( simpleSubPubThreads[ i ] ), K_FOREVER );
         }
 
         /* Terminate the agent task. */

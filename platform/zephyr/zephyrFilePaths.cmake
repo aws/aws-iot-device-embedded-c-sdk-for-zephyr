@@ -20,3 +20,10 @@ set( MBEDTLS_SOURCES
 # Platform transport library include directories.
 set( COMMON_TRANSPORT_INCLUDE_PUBLIC_DIRS
      ${CMAKE_CURRENT_LIST_DIR}/transport/include )
+
+set( MQTT_AGENT_ZEPHYR_SOURCES
+     ${CMAKE_CURRENT_LIST_DIR}/mqtt_agent/src/agent_interface_zephyr.c
+     ${CMAKE_CURRENT_LIST_DIR}/mqtt_agent/src/subscription_manager.c )
+
+set( MQTT_AGENT_ZEPHYR_INCLUDE_PUBLIC_DIRS
+     ${CMAKE_CURRENT_LIST_DIR}/mqtt_agent/include )

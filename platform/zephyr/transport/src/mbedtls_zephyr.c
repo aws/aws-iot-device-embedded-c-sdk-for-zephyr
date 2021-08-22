@@ -704,7 +704,7 @@ static TlsTransportStatus_t initMbedtls( mbedtls_entropy_context * pEntropyConte
 }
 /*-----------------------------------------------------------*/
 
-TlsTransportStatus_t MBedTLS_Connect( NetworkContext_t * pNetworkContext,
+TlsTransportStatus_t MbedTLS_Connect( NetworkContext_t * pNetworkContext,
                                       const ServerInfo_t * pServerInfo,
                                       const NetworkCredentials_t * pNetworkCredentials,
                                       uint32_t receiveTimeoutMs,
@@ -790,7 +790,7 @@ TlsTransportStatus_t MBedTLS_Connect( NetworkContext_t * pNetworkContext,
 }
 /*-----------------------------------------------------------*/
 
-void MBedTLS_Disconnect( NetworkContext_t * pNetworkContext )
+SocketStatus_t MbedTLS_Disconnect( NetworkContext_t * pNetworkContext )
 {
     TlsTransportParams_t * pTlsTransportParams = NULL;
     SocketStatus_t tlsStatus = 0;
@@ -828,15 +828,17 @@ void MBedTLS_Disconnect( NetworkContext_t * pNetworkContext )
         }
 
         /* Call socket shutdown function to close connection. */
-        Sockets_Disconnect( pTlsTransportParams->tcpSocket );
+        tlsStatus = Sockets_Disconnect( pTlsTransportParams->tcpSocket );
 
         /* Free mbed TLS contexts. */
         sslContextFree( &( pTlsTransportParams->sslContext ) );
     }
+
+    return tlsStatus;
 }
 /*-----------------------------------------------------------*/
 
-int32_t MBedTLS_recv( NetworkContext_t * pNetworkContext,
+int32_t MbedTLS_recv( NetworkContext_t * pNetworkContext,
                       void * pBuffer,
                       size_t bytesToRecv )
 {
@@ -926,7 +928,7 @@ int32_t MBedTLS_recv( NetworkContext_t * pNetworkContext,
 }
 /*-----------------------------------------------------------*/
 
-int32_t MBedTLS_send( NetworkContext_t * pNetworkContext,
+int32_t MbedTLS_send( NetworkContext_t * pNetworkContext,
                       const void * pBuffer,
                       size_t bytesToSend )
 {

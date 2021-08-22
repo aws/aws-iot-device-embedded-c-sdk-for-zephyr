@@ -22,9 +22,41 @@
 
 /* Standard includes. */
 #include <stdlib.h>
+#include <assert.h>
+#include <stdbool.h>
 
 /* Agent interface header */
 #include "agent_interface_zephyr.h"
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief The number of structures to allocate in the command pool.
+ */
+#ifndef NUM_COMMANDS_IN_POOL
+    #define NUM_COMMANDS_IN_POOL    ( 10U )
+#endif
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief The pool of command structures used to hold information on commands (such
+ * as PUBLISH or SUBSCRIBE) between the command being created by an API call and
+ * completion of the command by the execution of the command's callback.
+ */
+static MQTTAgentCommand_t commandStructurePool[ NUM_COMMANDS_IN_POOL ];
+
+/**
+ * @brief Statically create a message queue to handle the command structures.
+ * The message queue is used for managing the memory blocks of command objects in the
+ * command pool in a thread-safe manner.
+ */
+K_MSGQ_DEFINE( commandStructureQueue, sizeof( MQTTAgentCommand_t * ), NUM_COMMANDS_IN_POOL, sizeof( MQTTAgentCommand_t * ) );
+
+/**
+ * @brief Initialization status of the queue.
+ */
+static volatile uint8_t queueInit = false;
 
 /*-----------------------------------------------------------*/
 
@@ -58,18 +90,64 @@ bool Agent_MessageReceive( MQTTAgentMessageContext_t * pMsgCtx,
 }
 /*-----------------------------------------------------------*/
 
+void Agent_InitializePool( void )
+{
+    size_t i;
+    MQTTAgentCommand_t * pCommand;
+    bool commandAdded = false;
+
+    if( !queueInit )
+    {
+        /* Populate the queue. */
+        for( i = 0; i < NUM_COMMANDS_IN_POOL; i++ )
+        {
+            /* Store the address as a variable. */
+            pCommand = &commandStructurePool[ i ];
+            /* Send the pointer to the queue. */
+            commandAdded = ( k_msgq_put( &commandStructureQueue, &pCommand, K_NO_WAIT ) == 0 );
+            assert( commandAdded );
+        }
+
+        queueInit = true;
+    }
+}
+/*-----------------------------------------------------------*/
+
 MQTTAgentCommand_t * Agent_GetCommand( uint32_t blockTimeMs )
 {
-    MQTTAgentCommand_t * pCommand = ( MQTTAgentCommand_t * ) malloc( sizeof( MQTTAgentCommand_t ) );
+    MQTTAgentCommand_t * structToUse = NULL;
+    bool commandRetrieved = false;
 
-    ( void ) blockTimeMs;
-    memset( pCommand, 0x00, sizeof( MQTTAgentCommand_t ) );
-    return pCommand;
+    /* Check queue has been created. */
+    assert( queueInit );
+
+    commandRetrieved = ( k_msgq_get( &commandStructureQueue, &structToUse, K_MSEC( blockTimeMs ) ) == 0 );
+
+    if( !commandRetrieved )
+    {
+        LogError( ( "No command structure available. Maximum number of commands statically allocated in the pool is: %d",
+                    NUM_COMMANDS_IN_POOL ) );
+    }
+
+    return structToUse;
 }
 /*-----------------------------------------------------------*/
 
 bool Agent_FreeCommand( MQTTAgentCommand_t * pCommandToRelease )
 {
-    free( pCommandToRelease );
-    return true;
+    bool structReturned = false;
+
+    /* Check queue has been created. */
+    assert( queueInit );
+
+    /* See if the structure being returned is actually from the pool. */
+    if( ( pCommandToRelease >= commandStructurePool ) &&
+        ( pCommandToRelease < ( commandStructurePool + NUM_COMMANDS_IN_POOL ) ) )
+    {
+        structReturned = ( k_msgq_put( &commandStructureQueue, &pCommandToRelease, K_NO_WAIT ) == 0 );
+
+        assert( structReturned );
+    }
+
+    return structReturned;
 }

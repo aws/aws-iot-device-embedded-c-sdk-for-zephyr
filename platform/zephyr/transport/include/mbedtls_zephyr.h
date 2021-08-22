@@ -147,7 +147,7 @@ typedef enum TlsTransportStatus
  * @return #TLS_TRANSPORT_SUCCESS, #TLS_TRANSPORT_INSUFFICIENT_MEMORY, #TLS_TRANSPORT_INVALID_CREDENTIALS,
  * #TLS_TRANSPORT_HANDSHAKE_FAILED, #TLS_TRANSPORT_INTERNAL_ERROR, or #TLS_TRANSPORT_CONNECT_FAILURE.
  */
-TlsTransportStatus_t MBedTLS_Connect( NetworkContext_t * pNetworkContext,
+TlsTransportStatus_t MbedTLS_Connect( NetworkContext_t * pNetworkContext,
                                       const ServerInfo_t * pServerInfo,
                                       const NetworkCredentials_t * pNetworkCredentials,
                                       uint32_t receiveTimeoutMs,
@@ -158,7 +158,7 @@ TlsTransportStatus_t MBedTLS_Connect( NetworkContext_t * pNetworkContext,
  *
  * @param[in] pNetworkContext Network context.
  */
-void MBedTLS_Disconnect( NetworkContext_t * pNetworkContext );
+SocketStatus_t MbedTLS_Disconnect( NetworkContext_t * pNetworkContext );
 
 /**
  * @brief Receives data from an established TLS connection.
@@ -174,7 +174,7 @@ void MBedTLS_Disconnect( NetworkContext_t * pNetworkContext );
  * 0 if the socket times out without reading any bytes;
  * negative value on error.
  */
-int32_t MBedTLS_recv( NetworkContext_t * pNetworkContext,
+int32_t MbedTLS_recv( NetworkContext_t * pNetworkContext,
                       void * pBuffer,
                       size_t bytesToRecv );
 
@@ -192,7 +192,7 @@ int32_t MBedTLS_recv( NetworkContext_t * pNetworkContext,
  * 0 if the socket times out without sending any bytes;
  * else a negative value to represent error.
  */
-int32_t MBedTLS_send( NetworkContext_t * pNetworkContext,
+int32_t MbedTLS_send( NetworkContext_t * pNetworkContext,
                       const void * pBuffer,
                       size_t bytesToSend );
 

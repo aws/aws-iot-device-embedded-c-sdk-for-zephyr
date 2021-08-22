@@ -97,24 +97,24 @@ Where
 
 * <Actual_Username> is the actual username used for authentication, if username and password are used for authentication. When username and password based authentication is not used, this
 is an empty value.
-* <OS_Name> is the Operating System the application is running on (e.g. Ubuntu)
-* <OS_Version> is the version number of the Operating System (e.g. 20.10)
-* <Hardware_Platform> is the Hardware Platform the application is running on (e.g. RaspberryPi)
+* <OS_Name> is the Operating System the application is running on (e.g. Zephyr)
+* <OS_Version> is the version number of the Operating System (e.g. 2.6.0)
+* <Hardware_Platform> is the Hardware Platform the application is running on (e.g. ESP32)
 * <MQTT_Library_name> is the MQTT Client library being used (e.g. coreMQTT)
 * <MQTT_Library_version> is the version of the MQTT Client library being used (e.g. 1.1.0)
 
 Example
 
-*  Actual_Username = “iotuser”, OS_Name = Ubuntu, OS_Version = 20.10, Hardware_Platform_Name = RaspberryPi, MQTT_Library_Name = coremqtt, MQTT_Library_version = 1.1.0. If username is not used, then “iotuser” can be removed.
+*  Actual_Username = “iotuser”, OS_Name = Zephyr, OS_Version = 2.6.0, Hardware_Platform_Name = ESP32, MQTT_Library_Name = coremqtt, MQTT_Library_version = 1.1.0. If username is not used, then “iotuser” can be removed.
 
 ```
 /* Username string:
- * iotuser?SDK=Ubuntu&Version=20.10&Platform=RaspberryPi&MQTTLib=coremqtt@1.1.0
+ * iotuser?SDK=Zephyr&Version=2.6.0&Platform=ESP32&MQTTLib=coremqtt@1.1.0
  */
 
-#define OS_NAME                   "Ubuntu"
-#define OS_VERSION                "20.10"
-#define HARDWARE_PLATFORM_NAME    "RaspberryPi"
+#define OS_NAME                   "Zephyr"
+#define OS_VERSION                "2.6.0"
+#define HARDWARE_PLATFORM_NAME    "ESP32"
 #define MQTT_LIB                  "coremqtt@1.1.0"
 
 #define USERNAME_STRING           "iotuser?SDK=" OS_NAME "&Version=" OS_VERSION "&Platform=" HARDWARE_PLATFORM_NAME "&MQTTLib=" MQTT_LIB
@@ -251,7 +251,7 @@ env:Path += "$env:ESPRESSIF_TOOLCHAIN_PATH\bin"
   
 3. Run `west build -b esp32 file_path_to_demo` to build a demo, replacing `file_path_to_demo` with the path to the desired demo. (Note: if another demo had been previously built in the west workspace, the additional option `--pristine` may need to be added to the end of the command.
 
-4. Run `west flash` to flash the demo. For documentation on additional options when flashing, please refer to https://docs.zephyrproject.org/latest/boards/xtensa/esp32/doc/index.html#flashing.
+4. Run `west flash` to flash the demo. The option `--esp-device *ESP_DEVICE*`, where `*ESP_DEVICE*` is the serial port to flash, may also be useful to flash for ESP boards not connected to the default port. For documentation on additional options when flashing, please refer to https://docs.zephyrproject.org/latest/boards/xtensa/esp32/doc/index.html#flashing.
 
 ## Adding C-SDK to a Zephyr Application
 

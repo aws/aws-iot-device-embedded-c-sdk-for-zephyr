@@ -210,12 +210,6 @@ static void simpleSubscribePublishTask( void * pParameters,
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Semaphore for keeping track of tasks finishing.
- * This is given whenever a task finishes.
- */
-extern struct k_sem taskFinishedSem;
-
-/**
  * @brief The MQTT agent manages the MQTT contexts.  This set the handle to the
  * context used by this demo.
  */
@@ -224,9 +218,10 @@ extern MQTTAgentContext_t globalMqttAgentContext;
 /*-----------------------------------------------------------*/
 
 /**
- * @brief k_thread array to hold thread information for each simple sub pub thread.
+ * @brief Array of thread handles for representing all the threads created for
+ * Publish-Subscribe operations in the demo.
  */
-static struct k_thread simpleSubPubThreads[ NUM_SIMPLE_SUB_PUB_TASKS_TO_CREATE ];
+struct k_thread simpleSubPubThreads[ NUM_SIMPLE_SUB_PUB_TASKS_TO_CREATE ];
 
 /**
  * @brief Semaphore to block at certain points of each thread's running to wait for publishes
@@ -551,8 +546,6 @@ static void simpleSubscribePublishTask( void * pParameters,
         pParams->success = true;
         LogInfo( ( "Task %s successful.", taskName ) );
     }
-
-    k_sem_give( &taskFinishedSem );
 
     /* Task will terminate itself after returning from entry (this) function. */
 }

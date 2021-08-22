@@ -49,6 +49,10 @@ LOG_MODULE_REGISTER( espressifWifiStation, LOG_LEVEL_DBG );
  */
 static struct k_sem wifiSem;
 
+/**
+ *  @brief Callback object for registering handlers for WiFi network connection event of DHCP address assignment.
+ *  The callback is used for a mechanism to be notified about connection of device to WiFi network.
+ */
 static struct net_mgmt_event_callback dhcpCb;
 
 /*-----------------------------------------------------------*/
